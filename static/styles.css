@@ -26,6 +26,10 @@
     --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
 /* --- Global Reset & Core Styling --- */
 body {
     font-family: 'Plus Jakarta Sans', 'Outfit', sans-serif;
@@ -102,7 +106,6 @@ nav {
     width: 100%;
     margin: 2.5rem auto;
     padding: 0 1.5rem;
-    box-sizing: border-box;
 }
 
 /* --- Forms & General Inputs --- */
@@ -143,6 +146,7 @@ textarea, input, select {
     color: var(--text-main);
     background-color: var(--bg-white);
     transition: var(--transition);
+    width: 100%;
 }
 
 textarea:focus, input:focus, select:focus {
@@ -607,6 +611,10 @@ textarea:focus, input:focus, select:focus {
         left: 0;
         top: 0;
         right: auto;
+    }
+    .input-row, .target-inputs, .macro-targets-inputs {
+        grid-template-columns: 1fr;
+        gap: 0.85rem;
     }
 }
 
