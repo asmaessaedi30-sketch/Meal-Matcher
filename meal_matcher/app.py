@@ -608,6 +608,12 @@ def index():
             9. Gluten-Free / Dairy-Free: Respect as requested.
             10. Gestational Diabetes: Safe, pregnancy-friendly complex carbohydrate portioning distributed throughout the day, low glycemic index, zero refined sugars, paired with adequate proteins and healthy fats to prevent glucose spikes.
             
+            CRITICAL PERFORMANCE RULE (FOR GENERATION SPEED):
+            To minimize latency and ensure near-instant output, keep the text extremely concise:
+            - "description" MUST be exactly one brief sentence (max 12 words).
+            - "ingredients" MUST be limited to a maximum of 4 essential items.
+            - "instructions" MUST be limited to a maximum of 3 short, direct steps.
+            
             Output a valid JSON object matching this exact schema:
             {{
                 "breakfast": {{

@@ -585,6 +585,21 @@ textarea:focus, input:focus, select:focus {
 }
 
 @media (max-width: 768px) {
+    .welcome-card {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1.25rem;
+        padding: 1.5rem;
+    }
+    .welcome-action {
+        width: 100%;
+    }
+    .edit-profile-btn {
+        display: block;
+        text-align: center;
+        width: 100%;
+        box-sizing: border-box;
+    }
     .results-header-box {
         padding-top: 3.5rem;
     }
