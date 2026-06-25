@@ -1,15 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Multi-Condition Meal Matcher · AI & Genetic Plan</title>
+    <title>Multi-Condition Meal Matcher</title>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="/static/styles.css">
 </head>
+
 <body>
 
     <header class="app-header">
@@ -30,13 +34,13 @@
 
     <main class="main-content">
         {% with messages = get_flashed_messages() %}
-            {% if messages %}
-                <div class="flash-messages">
-                    {% for message in messages %}
-                        <div class="flash-message warning-yellow">⚠️ {{ message }}</div>
-                    {% endfor %}
-                </div>
-            {% endif %}
+        {% if messages %}
+        <div class="flash-messages">
+            {% for message in messages %}
+            <div class="flash-message warning-yellow">⚠️ {{ message }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
         {% endwith %}
         {% block body %}{% endblock %}
     </main>
@@ -47,4 +51,5 @@
 
     <script src="/static/script.js"></script>
 </body>
+
 </html>
