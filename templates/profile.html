@@ -1,0 +1,375 @@
+{% extends "layout.html" %}
+
+{% block body %}
+<div class="profile-container">
+    <div class="profile-header">
+        <h2>Your Wellness Profile</h2>
+        <p class="subtitle">Enter your physical metrics and goals. We'll automatically calculate your energy needs and macronutrient targets, applying medical guardrails dynamically.</p>
+    </div>
+
+    {% if success %}
+    <div class="success-message">{{ success }}</div>
+    {% endif %}
+    {% if error %}
+    <div class="error-message">{{ error }}</div>
+    {% endif %}
+
+    <form action="/profile" method="POST" class="profile-form">
+        <div class="profile-grid">
+            <!-- Left Panel: Metrics -->
+            <div class="profile-card panel-metrics">
+                <h3>🏃 Physical Metrics</h3>
+                
+                <div class="input-row">
+                    <div class="input-group">
+                        <label for="age">Age (years)</label>
+                        <input type="number" id="age" name="age" value="{{ profile.age }}" min="1" max="120" required>
+                    </div>
+                    <div class="input-group">
+                        <label for="gender">Gender</label>
+                        <select id="gender" name="gender" required>
+                            <option value="male" {% if profile.gender == 'male' %}selected{% endif %}>Male</option>
+                            <option value="female" {% if profile.gender == 'female' %}selected{% endif %}>Female</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="input-row">
+                    <div class="input-group">
+                        <label for="weight_kg">Weight (kg)</label>
+                        <input type="number" id="weight_kg" name="weight_kg" value="{{ profile.weight_kg }}" step="0.1" min="10" max="300" required>
+                    </div>
+                    <div class="input-group">
+                        <label for="height_cm">Height (cm)</label>
+                        <input type="number" id="height_cm" name="height_cm" value="{{ profile.height_cm }}" step="0.1" min="50" max="250" required>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label for="activity_level">Activity Level</label>
+                    <select id="activity_level" name="activity_level" required>
+                        <option value="sedentary" {% if profile.activity_level == 'sedentary' %}selected{% endif %}>Sedentary (Little/no exercise)</option>
+                        <option value="light" {% if profile.activity_level == 'light' %}selected{% endif %}>Lightly Active (1-3 days/week)</option>
+                        <option value="moderate" {% if profile.activity_level == 'moderate' %}selected{% endif %}>Moderately Active (3-5 days/week)</option>
+                        <option value="active" {% if profile.activity_level == 'active' %}selected{% endif %}>Very Active (6-7 days/week)</option>
+                        <option value="extra" {% if profile.activity_level == 'extra' %}selected{% endif %}>Extra Active (Physical job/double daily training)</option>
+                    </select>
+                </div>
+
+                <div class="input-group">
+                    <label for="goal">Primary Health Goal</label>
+                    <select id="goal" name="goal" required>
+                        <option value="lose" {% if profile.goal == 'lose' %}selected{% endif %}>Weight Loss (Caloric Deficit)</option>
+                        <option value="maintain" {% if profile.goal == 'maintain' %}selected{% endif %}>Maintenance (TDEE balance)</option>
+                        <option value="gain" {% if profile.goal == 'gain' %}selected{% endif %}>Muscle Gain (Caloric Surplus)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Middle Panel: Conditions & Preferences -->
+            <div class="profile-card panel-conditions">
+                <h3>🩺 Medical Conditions</h3>
+                <p class="section-desc">We apply strict, clinically-guided guardrails to protect your health.</p>
+                <div class="checkbox-group">
+                    <label class="check-label">
+                        <input type="checkbox" name="conditions" value="diabetes" {% if 'diabetes' in conditions %}checked{% endif %}>
+                        <span class="custom-check"></span>
+                        <div class="check-text">
+                            <strong>Type 2 Diabetes</strong>
+                            <span>Lowers high-glycemic carbohydrates.</span>
+                        </div>
+                    </label>
+                    <label class="check-label">
+                        <input type="checkbox" name="conditions" value="gestational_diabetes" {% if 'gestational_diabetes' in conditions %}checked{% endif %}>
+                        <span class="custom-check"></span>
+                        <div class="check-text">
+                            <strong>Gestational Diabetes</strong>
+                            <span>Balances & monitors carbohydrate distribution.</span>
+                        </div>
+                    </label>
+                    <label class="check-label">
+                        <input type="checkbox" name="conditions" value="hypertension" {% if 'hypertension' in conditions %}checked{% endif %}>
+                        <span class="custom-check"></span>
+                        <div class="check-text">
+                            <strong>Hypertension</strong>
+                            <span>Caps daily sodium intake at 1500mg.</span>
+                        </div>
+                    </label>
+                    <label class="check-label">
+                        <input type="checkbox" name="conditions" value="ckd" {% if 'ckd' in conditions %}checked{% endif %}>
+                        <span class="custom-check"></span>
+                        <div class="check-text">
+                            <strong>Chronic Kidney Disease (CKD)</strong>
+                            <span>Caps protein intake at 60g/day.</span>
+                        </div>
+                    </label>
+                    <label class="check-label">
+                        <input type="checkbox" name="conditions" value="cholesterol" {% if 'cholesterol' in conditions %}checked{% endif %}>
+                        <span class="custom-check"></span>
+                        <div class="check-text">
+                            <strong>High Cholesterol</strong>
+                            <span>Caps daily cholesterol at 200mg.</span>
+                        </div>
+                    </label>
+                    <label class="check-label">
+                        <input type="checkbox" name="conditions" value="celiac" {% if 'celiac' in conditions %}checked{% endif %}>
+                        <span class="custom-check"></span>
+                        <div class="check-text">
+                            <strong>Celiac Disease</strong>
+                            <span>Enforces a strict gluten-free plan.</span>
+                        </div>
+                    </label>
+                    <label class="check-label">
+                        <input type="checkbox" name="conditions" value="ibs" {% if 'ibs' in conditions %}checked{% endif %}>
+                        <span class="custom-check"></span>
+                        <div class="check-text">
+                            <strong>IBS / Low-FODMAP</strong>
+                            <span>Excludes gas-producing & irritating carbs.</span>
+                        </div>
+                    </label>
+                </div>
+
+                <h3 class="margin-top">🥗 Dietary Preferences</h3>
+                <div class="checkbox-group">
+                    <label class="check-label">
+                        <input type="checkbox" name="preferences" value="vegan" {% if 'vegan' in preferences %}checked{% endif %}>
+                        <span class="custom-check"></span>
+                        <div class="check-text"><strong>Vegan</strong><span>Strictly plant-based.</span></div>
+                    </label>
+                    <label class="check-label">
+                        <input type="checkbox" name="preferences" value="vegetarian" {% if 'vegetarian' in preferences %}checked{% endif %}>
+                        <span class="custom-check"></span>
+                        <div class="check-text"><strong>Vegetarian</strong><span>Plant-based + eggs/dairy.</span></div>
+                    </label>
+                    <label class="check-label">
+                        <input type="checkbox" name="preferences" value="gluten_free" {% if 'gluten_free' in preferences %}checked{% endif %}>
+                        <span class="custom-check"></span>
+                        <div class="check-text"><strong>Gluten-Free</strong><span>Excludes gluten.</span></div>
+                    </label>
+                    <label class="check-label">
+                        <input type="checkbox" name="preferences" value="dairy_free" {% if 'dairy_free' in preferences %}checked{% endif %}>
+                        <span class="custom-check"></span>
+                        <div class="check-text"><strong>Dairy-Free</strong><span>Excludes lactose & milk protein.</span></div>
+                    </label>
+                    <label class="check-label">
+                        <input type="checkbox" name="preferences" value="high_protein" {% if 'high_protein' in preferences %}checked{% endif %}>
+                        <span class="custom-check"></span>
+                        <div class="check-text"><strong>High Protein</strong><span>Elevates daily protein target.</span></div>
+                    </label>
+                    <label class="check-label">
+                        <input type="checkbox" name="preferences" value="high_fiber" {% if 'high_fiber' in preferences %}checked{% endif %}>
+                        <span class="custom-check"></span>
+                        <div class="check-text"><strong>High Fiber</strong><span>Emphasizes fiber-rich foods.</span></div>
+                    </label>
+                    <label class="check-label">
+                        <input type="checkbox" name="preferences" value="low_carb" {% if 'low_carb' in preferences %}checked{% endif %}>
+                        <span class="custom-check"></span>
+                        <div class="check-text"><strong>Low Carb</strong><span>Under 100g carbs/day.</span></div>
+                    </label>
+                    <label class="check-label">
+                        <input type="checkbox" name="preferences" value="keto" {% if 'keto' in preferences %}checked{% endif %}>
+                        <span class="custom-check"></span>
+                        <div class="check-text"><strong>Ketogenic</strong><span>Ultra-low carb, high fat.</span></div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Right Panel: Targets Override -->
+            <div class="profile-card panel-targets">
+                <h3>🎯 Recommended Target Macros</h3>
+                <p class="section-desc">Calculated using the Mifflin-St Jeor formula, updated instantly based on your choices.</p>
+                
+                <div class="calculator-box">
+                    <div class="calc-row">
+                        <span>Basal Metabolic Rate (BMR):</span>
+                        <strong id="bmr_val">1550 kcal</strong>
+                    </div>
+                    <div class="calc-row">
+                        <span>Total Energy Exp (TDEE):</span>
+                        <strong id="tdee_val">2150 kcal</strong>
+                    </div>
+                </div>
+
+                <div class="target-inputs">
+                    <div class="input-group">
+                        <label for="target_calories">Daily Calories (kcal)</label>
+                        <input type="number" id="target_calories" name="target_calories" value="{{ profile.target_calories }}" required>
+                    </div>
+                    <div class="input-group">
+                        <label for="target_protein">Protein (g)</label>
+                        <input type="number" id="target_protein" name="target_protein" value="{{ profile.target_protein }}" required>
+                        <span class="macro-suggestion" id="prot_suggest">Target: 130g</span>
+                    </div>
+                    <div class="input-group">
+                        <label for="target_carbs">Carbohydrates (g)</label>
+                        <input type="number" id="target_carbs" name="target_carbs" value="{{ profile.target_carbs }}" required>
+                        <span class="macro-suggestion" id="carb_suggest">Target: 220g</span>
+                    </div>
+                    <div class="input-group">
+                        <label for="target_fat">Fats (g)</label>
+                        <input type="number" id="target_fat" name="target_fat" value="{{ profile.target_fat }}" required>
+                        <span class="macro-suggestion" id="fat_suggest">Target: 65g</span>
+                    </div>
+                </div>
+
+                <div class="warning-box" id="ckd_warning" style="display:none;">
+                    ⚠️ <strong>CKD Notice:</strong> Protein has been capped at 60g to protect kidney function.
+                </div>
+                
+                <div class="warning-box warning-yellow" id="diabetes_warning" style="display:none;">
+                    ℹ️ <strong>Diabetes Alert:</strong> Carbohydrates are restricted to lower levels to help regulate blood glucose.
+                </div>
+
+                <button type="submit" class="submit-btn full-width-btn">Save & Update Profile 💾</button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const ageInput = document.getElementById("age");
+    const genderSelect = document.getElementById("gender");
+    const weightInput = document.getElementById("weight_kg");
+    const heightInput = document.getElementById("height_cm");
+    const activitySelect = document.getElementById("activity_level");
+    const goalSelect = document.getElementById("goal");
+    
+    const calInput = document.getElementById("target_calories");
+    const protInput = document.getElementById("target_protein");
+    const carbInput = document.getElementById("target_carbs");
+    const fatInput = document.getElementById("target_fat");
+
+    const bmrText = document.getElementById("bmr_val");
+    const tdeeText = document.getElementById("tdee_val");
+    const ckdWarning = document.getElementById("ckd_warning");
+    const diabetesWarning = document.getElementById("diabetes_warning");
+
+    function getSelectedConditions() {
+        const conds = [];
+        document.querySelectorAll("input[name='conditions']:checked").forEach(cb => {
+            conds.push(cb.value);
+        });
+        return conds;
+    }
+
+    function getSelectedPreferences() {
+        const prefs = [];
+        document.querySelectorAll("input[name='preferences']:checked").forEach(cb => {
+            prefs.push(cb.value);
+        });
+        return prefs;
+    }
+
+    function recalculateTargets(preserveCustom = false) {
+        const age = parseInt(ageInput.value) || 30;
+        const gender = genderSelect.value;
+        const weight = parseFloat(weightInput.value) || 70;
+        const height = parseFloat(heightInput.value) || 170;
+        const activity = activitySelect.value;
+        const goal = goalSelect.value;
+
+        const conditions = getSelectedConditions();
+        const preferences = getSelectedPreferences();
+
+        // 1. Mifflin-St Jeor BMR
+        let bmr = 0;
+        if (gender === "male") {
+            bmr = 10 * weight + 6.25 * height - 5 * age + 5;
+        } else {
+            bmr = 10 * weight + 6.25 * height - 5 * age - 161;
+        }
+        bmrText.textContent = Math.round(bmr) + " kcal";
+
+        // 2. TDEE
+        let multiplier = 1.2;
+        if (activity === "light") multiplier = 1.375;
+        else if (activity === "moderate") multiplier = 1.55;
+        else if (activity === "active") multiplier = 1.725;
+        else if (activity === "extra") multiplier = 1.9;
+
+        let tdee = bmr * multiplier;
+        tdeeText.textContent = Math.round(tdee) + " kcal";
+
+        // 3. Goal Adjustment
+        let targetCal = tdee;
+        if (goal === "lose") {
+            targetCal -= 500; // Caloric deficit
+        } else if (goal === "gain") {
+            targetCal += 350; // Caloric surplus
+        }
+        targetCal = Math.max(1200, Math.round(targetCal));
+
+        // 4. Macro Calculation
+        let proteinPerKg = 1.6; // default g/kg
+        if (preferences.includes("high_protein")) {
+            proteinPerKg = 2.2;
+        }
+
+        let targetProt = weight * proteinPerKg;
+        
+        // CKD protein cap check
+        if (conditions.includes("ckd")) {
+            targetProt = Math.min(targetProt, 60);
+            ckdWarning.style.display = "block";
+        } else {
+            ckdWarning.style.display = "none";
+        }
+        targetProt = Math.round(targetProt);
+
+        // Fat targets
+        let fatPercent = 0.25; // default 25% of calories
+        if (preferences.includes("keto")) {
+            fatPercent = 0.70;
+        } else if (preferences.includes("low_carb")) {
+            fatPercent = 0.40;
+        }
+        let targetFat = Math.round((targetCal * fatPercent) / 9);
+
+        // Carbs targets
+        let targetCarbs = Math.round((targetCal - (targetProt * 4) - (targetFat * 9)) / 4);
+        if (targetCarbs < 0) targetCarbs = 0;
+
+        // Diabetes restriction check
+        if (conditions.includes("diabetes")) {
+            diabetesWarning.style.display = "block";
+            // If diabetes is active and carbs are high, cap carbs and shift to protein/fat
+            const carbCalCap = targetCal * 0.40; // max 40% carbs
+            const carbCap = Math.round(carbCalCap / 4);
+            if (targetCarbs > carbCap) {
+                const diff = targetCarbs - carbCap;
+                targetCarbs = carbCap;
+                // Add diff to fat
+                targetFat += Math.round((diff * 4) / 9);
+            }
+        } else {
+            diabetesWarning.style.display = "none";
+        }
+
+        // Suggestion subtexts
+        document.getElementById("prot_suggest").textContent = `Recommended: ${targetProt}g`;
+        document.getElementById("carb_suggest").textContent = `Recommended: ${targetCarbs}g`;
+        document.getElementById("fat_suggest").textContent = `Recommended: ${targetFat}g`;
+
+        if (!preserveCustom) {
+            calInput.value = targetCal;
+            protInput.value = targetProt;
+            carbInput.value = targetCarbs;
+            fatInput.value = targetFat;
+        }
+    }
+
+    // Set up listeners for recalculating
+    const inputs = [ageInput, genderSelect, weightInput, heightInput, activitySelect, goalSelect];
+    inputs.forEach(el => el.addEventListener("change", () => recalculateTargets(false)));
+    inputs.forEach(el => el.addEventListener("input", () => recalculateTargets(false)));
+
+    document.querySelectorAll("input[type='checkbox']").forEach(cb => {
+        cb.addEventListener("change", () => recalculateTargets(false));
+    });
+
+    // Run once on load, preserving the custom values saved in the database
+    recalculateTargets(true);
+});
+</script>
+{% endblock %}

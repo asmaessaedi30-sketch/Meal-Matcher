@@ -1,0 +1,45 @@
+{% extends "layout.html" %}
+
+{% block body %}
+<div class="form-container auth-container">
+    <h2>Log In</h2>
+    <p class="subtitle">Access Meal Matcher and generate an optimized meal plan.</p>
+
+    {% if error %}
+    <div class="error-message">{{ error }}</div>
+    {% endif %}
+
+    {% if success %}
+    <div class="success-message">{{ success }}</div>
+    {% endif %}
+
+    <form action="/login" method="POST" class="auth-form">
+        <div class="input-group">
+            <label for="email">Email Address:</label>
+            <input
+                id="email"
+                name="email"
+                type="email"
+                autocomplete="email"
+                required
+            >
+        </div>
+
+        <div class="input-group">
+            <label for="password">Password:</label>
+            <input
+                id="password"
+                name="password"
+                type="password"
+                autocomplete="current-password"
+                required
+            >
+        </div>
+
+        <button type="submit" class="submit-btn">Log In</button>
+    </form>
+
+    <p class="auth-switch"><a href="/forgot_password">Forgot Password?</a></p>
+    <p class="auth-switch">Need an account? <a href="/register">Register</a></p>
+</div>
+{% endblock %}

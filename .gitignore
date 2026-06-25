@@ -1,0 +1,28 @@
+# Virtual environments (local packages)
+.venv/
+.venv-1/
+venv/
+ENV/
+
+# Environment secrets (contains API keys and SMTP passwords)
+.env
+meal_matcher/.env
+
+# Flask session storage (local user session files)
+flask_session/
+meal_matcher/flask_session/
+
+# Python compiled files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# SQLite temporary files (do NOT ignore .db itself, as it holds the schema)
+*.db-journal
+*.db-shm
+*.db-wal
+
+# OS files
+.DS_Store
+Thumbs.db

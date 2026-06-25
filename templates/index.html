@@ -1,0 +1,160 @@
+{% extends "layout.html" %}
+
+{% block body %}
+<div class="dashboard-container">
+    <!-- Welcome Header -->
+    <div class="welcome-card">
+        <div class="welcome-info">
+            <h2>Welcome back, <span class="accent-text">{{ session.username }}</span>! 👋</h2>
+            <p>Your wellness metrics: <strong>{{ profile.weight_kg }} kg</strong> · <strong>{{ profile.height_cm }} cm</strong> · <strong>{{ profile.goal | capitalize }} goal</strong></p>
+        </div>
+        <div class="welcome-action">
+            <a href="/profile" class="edit-profile-btn">Edit Health Profile ⚙️</a>
+        </div>
+    </div>
+
+    <!-- Error/Success Alerts -->
+    {% if error %}
+    <div class="error-message">⚠️ {{ error }}</div>
+    {% endif %}
+
+    <!-- Plan Generation Form -->
+    <form action="/" method="POST" class="prompt-form">
+        <div class="form-grid">
+            <!-- Left Side: Engine Choice & Request -->
+            <div class="form-card main-generator">
+                <h3>🍽️ Generate Your Meal Plan</h3>
+                
+                <input type="hidden" name="engine" value="gemini">
+
+                <div class="input-group">
+                    <label for="user_prompt">Special Requests or Ingredients (Optional):</label>
+                    <textarea 
+                        id="user_prompt" 
+                        name="user_prompt" 
+                        rows="4" 
+                        placeholder="e.g., Include egg whites and spinach, avoid spicy seasonings, make breakfast quick to prepare."
+                    ></textarea>
+                </div>
+
+                <button type="submit" class="submit-btn generate-btn">Generate Optimized Plan ✨</button>
+            </div>
+
+            <!-- Right Side: Health Override Settings -->
+            <div class="form-card sidebar-settings">
+                <h3>🎯 Plan Targets & Guardrails</h3>
+                <p class="sidebar-desc">Inherited from your profile. Feel free to adjust these temporary values for this plan.</p>
+
+                <!-- Macro Targets Grid -->
+                <div class="macro-targets-inputs">
+                    <div class="target-input-box">
+                        <label for="target_calories">Calories (kcal)</label>
+                        <input type="number" id="target_calories" name="target_calories" value="{{ profile.target_calories }}" required>
+                    </div>
+                    <div class="target-input-box">
+                        <label for="target_protein">Protein (g)</label>
+                        <input type="number" id="target_protein" name="target_protein" value="{{ profile.target_protein }}" required>
+                    </div>
+                    <div class="target-input-box">
+                        <label for="target_carbs">Carbs (g)</label>
+                        <input type="number" id="target_carbs" name="target_carbs" value="{{ profile.target_carbs }}" required>
+                    </div>
+                    <div class="target-input-box">
+                        <label for="target_fat">Fats (g)</label>
+                        <input type="number" id="target_fat" name="target_fat" value="{{ profile.target_fat }}" required>
+                    </div>
+                </div>
+
+                <!-- Health Checkboxes -->
+                <div class="accordion-section">
+                    <h4>🩺 Active Medical Guardrails</h4>
+                    <div class="checkbox-list">
+                        <label class="check-item">
+                            <input type="checkbox" name="conditions" value="diabetes" {% if 'diabetes' in conditions %}checked{% endif %}>
+                            <span class="checkmark"></span>
+                            Type 2 Diabetes
+                        </label>
+                        <label class="check-item">
+                            <input type="checkbox" name="conditions" value="gestational_diabetes" {% if 'gestational_diabetes' in conditions %}checked{% endif %}>
+                            <span class="checkmark"></span>
+                            Gestational Diabetes
+                        </label>
+                        <label class="check-item">
+                            <input type="checkbox" name="conditions" value="hypertension" {% if 'hypertension' in conditions %}checked{% endif %}>
+                            <span class="checkmark"></span>
+                            Hypertension
+                        </label>
+                        <label class="check-item">
+                            <input type="checkbox" name="conditions" value="ckd" {% if 'ckd' in conditions %}checked{% endif %}>
+                            <span class="checkmark"></span>
+                            Chronic Kidney Disease (CKD)
+                        </label>
+                        <label class="check-item">
+                            <input type="checkbox" name="conditions" value="cholesterol" {% if 'cholesterol' in conditions %}checked{% endif %}>
+                            <span class="checkmark"></span>
+                            High Cholesterol
+                        </label>
+                        <label class="check-item">
+                            <input type="checkbox" name="conditions" value="celiac" {% if 'celiac' in conditions %}checked{% endif %}>
+                            <span class="checkmark"></span>
+                            Celiac Disease
+                        </label>
+                        <label class="check-item">
+                            <input type="checkbox" name="conditions" value="ibs" {% if 'ibs' in conditions %}checked{% endif %}>
+                            <span class="checkmark"></span>
+                            IBS / Low-FODMAP
+                        </label>
+                    </div>
+                </div>
+
+                <div class="accordion-section">
+                    <h4>🥗 Dietary Preferences</h4>
+                    <div class="checkbox-list">
+                        <label class="check-item">
+                            <input type="checkbox" name="preferences" value="vegan" {% if 'vegan' in preferences %}checked{% endif %}>
+                            <span class="checkmark"></span>
+                            Vegan
+                        </label>
+                        <label class="check-item">
+                            <input type="checkbox" name="preferences" value="vegetarian" {% if 'vegetarian' in preferences %}checked{% endif %}>
+                            <span class="checkmark"></span>
+                            Vegetarian
+                        </label>
+                        <label class="check-item">
+                            <input type="checkbox" name="preferences" value="gluten_free" {% if 'gluten_free' in preferences %}checked{% endif %}>
+                            <span class="checkmark"></span>
+                            Gluten-Free
+                        </label>
+                        <label class="check-item">
+                            <input type="checkbox" name="preferences" value="dairy_free" {% if 'dairy_free' in preferences %}checked{% endif %}>
+                            <span class="checkmark"></span>
+                            Dairy-Free
+                        </label>
+                        <label class="check-item">
+                            <input type="checkbox" name="preferences" value="high_protein" {% if 'high_protein' in preferences %}checked{% endif %}>
+                            <span class="checkmark"></span>
+                            High Protein
+                        </label>
+                        <label class="check-item">
+                            <input type="checkbox" name="preferences" value="high_fiber" {% if 'high_fiber' in preferences %}checked{% endif %}>
+                            <span class="checkmark"></span>
+                            High Fiber
+                        </label>
+                        <label class="check-item">
+                            <input type="checkbox" name="preferences" value="low_carb" {% if 'low_carb' in preferences %}checked{% endif %}>
+                            <span class="checkmark"></span>
+                            Low Carb
+                        </label>
+                        <label class="check-item">
+                            <input type="checkbox" name="preferences" value="keto" {% if 'keto' in preferences %}checked{% endif %}>
+                            <span class="checkmark"></span>
+                            Keto
+                        </label>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}

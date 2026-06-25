@@ -1,0 +1,7 @@
+Flask
+Flask-Session
+cs50
+werkzeug
+google-genai
+python-dotenv
+gunicorn
