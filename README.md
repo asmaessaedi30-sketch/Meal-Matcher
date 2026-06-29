@@ -1,204 +1,76 @@
-
 # Meal Matcher: Multi-Condition AI & Genetic Portion Meal Planner
-
+#### Video Demo: <https://youtu.be/QSzxB8MARUA?si=tUG-PzbBiDOD21F_>
 #### **Created by:** Asma Essaedi
 
+Description:
+Meal Matcher is a web-based clinical dietary management and wellness application built for calorie tracking and medical nutrition therapy. This app calculates daily nutritional targets based on the user's biometrics and dynamically applies medical guardrails based on user's chronic health conditions.
 
----
 
-## 🍽️ Project Overview
+`requirements.txt`: This file stores dependencies the application depends upon:
 
-**Meal Matcher** is a responsive, web-based clinical dietary management and wellness application built to bridge the gap between simple calorie tracking and medical nutrition therapy. Unlike generic diet tracking tools, Meal Matcher calculates daily nutritional targets based on user biometrics and dynamically applies medical guardrails for users managing chronic health conditions.
+- Flask - This is the web framework that handles the routing,request, response,template and the overall HTTP lifecycle
+- Flask-Session - Flask session object is a server-side file that stores data about the user login state and meal plan results.
+- cs50 - This is Harvard's CS50 library that provides the SQL() function.
+- werkzeug - WSGI toolkit that is used for generate_password_hash() and check_password_hash() standard password security using PBKDF2 with salting.
+- google-genai - This is the official Google Generative AI SDK that allows the call of the GEMINI 2.5 Flash model to generate meal plans from natural language prompts.
+- python-dotenv - It allows the loading of environment variables from .env file into os.environ, so secrets, such as API keys and email passwords remain out of source code.
 
-To achieve this, the application implements a unique **Dual-Engine Planning Architecture**:
-1. **AI Wellness Assistant**: Uses the modern Google GenAI SDK (`gemini-2.5-flash`) via structured JSON schema instructions to generate custom, delicious meal recipes (breakfast, lunch, dinner, and snack) tailored to medical conditions, dietary preferences, and macro targets.
-2. **Genetic Portion Optimizer**: An evolutionary genetic algorithm built in Python that acts as a secure local backup. It selects a combination of foods from a local SQLite database and optimizes their serving weights (in grams) across 100 generations to mathematically minimize calorie and macronutrient errors while avoiding medical trigger foods.
+- gunicorn - A production-level WSGI HTTP server. It replaces Flask's built-in development server that for deployment.
 
----
+**`app.py`:** This file is the heart of this web application. It imports standard python libraries, such as secrets, smtplib, time, json, os, functools plus every Flask and third-party library declared in the requirements.txt file.
 
-## 🚀 Key Features
+The file starts by calling load_dotenv() to pull the credentials from the .env file, then instantiates the flask app and point it to the templates and static folders. Two key app configs are set: SESSION_PERMANENT = False so sessions expire when the browser closes and SECRET_KEY, which signs the session cookie.
 
-*   **Secure Authentication & Account Recovery:** Features email-based logins with secure password hashing (`PBKDF2` with `SHA-256` salt via Werkzeug). Implements a production-grade password recovery flow supporting both **6-digit SMTP email verification codes** (15-minute expiry) and **signed URL recovery tokens** (1-hour expiry via `itsdangerous`).
-*   **Dynamic Physical Metric Calculator:** Implements the clinical **Mifflin-St Jeor Equation** on the frontend to calculate the user's Basal Metabolic Rate (BMR) and Total Daily Energy Expenditure (TDEE). Recommended macro targets update instantly as the user modifies their age, weight, height, activity level, or wellness goal.
-*   **Multi-Condition Medical Guardrails:** Enforces deterministic constraint checks and prompts for seven major health conditions:
-    *   **Type 2 Diabetes & Gestational Diabetes:** Blocks high-glycemic index foods and caps daily carbohydrate ratios.
-    *   **Hypertension:** Limits daily sodium consumption to under 1500mg.
-    *   **Chronic Kidney Disease (CKD):** Strictly caps daily protein intake at a medical maximum of 60g, overriding high-protein preferences to prevent renal strain.
-    *   **High Cholesterol:** Restricts daily cholesterol to under 200mg.
-    *   **Celiac Disease:** Strictly filters out and prevents the inclusion of ingredients containing gluten.
-    *   **IBS (Low FODMAP):** Excludes gas-producing carbohydrates (e.g., lentils, beans, onions, and garlic).
-*   **Automated Medical Risk Evaluation:** Analyzes the final generated meal plans against the user's selected medical conditions. If any potential health trigger is detected, high-visibility clinical warning cards are shown on the results page detailing the nutritional rationale.
-*   **Interactive Recipe Cards & Multimedia Integration:** Generated plans feature programmatic Unsplash food photography mapping, prep times, ingredients, instructions, and instant YouTube recipe walkthrough query shortcuts.
-*   **High-End Responsive Design:** Clean, modern interface designed from scratch using custom CSS properties, glassmorphic panel containers, fluid responsive grids, transition animations, and user-friendly async button loaders to prevent double-submitting during AI calculations.
+Next, db = SQL() opens the SQLite database. The startup block then runs a CREATE TABLE IF NOT EXISTS statement to create the user_profiles table(if it is missing) and seeds the foods table with 30 nutritionally labelled ingredients using INSERT OR IGNORE, which insert each row only if the row with the same name does not already exist. This prevent duplicate entries on every app restart.
 
----
+The helper functions that follow handle the application logic. get_ai_client() instantiates the Gemini client and raises a clear RuntimeError when the API key is missing or invalid. send_password_reset_email() composes and transmits a reset email over Google SMTP using smtplib and starttls.
 
-## 🛠️ Architecture & Technical Execution
+calculate_meal_risks() loops through every ingredient in a generated meal, tallies, sodium cholesterol, glycemic index flags, protein, gluten, and FODMAP counts, and then maps those totals against each active medical condition to return a list of risk cards labelled "High Risk" or "Low Risk". filter_food_library() removes foods that conflict with active dietary preferences or medical conditions before passing the food library to the optimizer. get_or_create_profile() fetches the logged-in user's row from user_profiles. It also inserts a default row when one does not yet exist.
 
-### The Two Planner Engines
 
-```mermaid
-graph TD
-    A[User Form Submission] --> B{Selected Engine?}
-    B -->|AI Wellness Assistant| C[Call Gemini API gemini-2.5-flash]
-    C -->|Structured JSON Output| D[Parse Recipes & Calculate Daily Totals]
-    B -->|Genetic Optimizer| E[Filter SQL Food Library by Preferences]
-    E --> F[Run Genetic Evolutionary Loop 100 Generations]
-    F -->|Optimal Portions| G[Formulate Portion Weights Table]
-    D --> H[Calculate Medical Risks & Render Results]
-    G --> H
-```
+The login_required decorator wraps the route so any unauthenticated request is redirected to the login page.
 
-#### 1. AI Wellness Assistant (Gemini Engine)
-When utilizing the AI Wellness Assistant, the application constructs a comprehensive system instruction including the user's physical parameters, target macros, custom prompts, and clinical instructions. It requests a structured response matching a strict JSON schema. The engine processes the response into four distinct recipe cards (Breakfast, Lunch, Dinner, Snack) with exact ingredient and instruction breakdowns.
+The routes are:
+-  /register, which validate the submitted email and password, hash the password with PBKDF2, inserts the new user row, and opens a session.
+- /login, which looks up the user by email, verifies the hashed password, and stores user_id and username in the session.
+- /logout takes the responsibilities of clearing the session and redirecting to the login page.
+- /forgot-password, which generates a cryptographically random six-digit reset code, hashes and stores it with a 15-minutes expiry, and emails it to the user via send_password_reset_email().
+- /reset-password, which validates the submitted code against the stored hash, checks the expiry timestamp, then updates the password hash and auto-logs the user in on success.
 
-#### 2. Genetic Portion Optimizer (Local Evolutionary Fallback)
-If the Gemini API is offline, or if the user chooses local optimization, the app runs an evolutionary algorithm.
-*   **Chromosome Representation:** A list of food items, each carrying a dynamically mutated weight property (`grams`).
-*   **Fitness Evaluation Function:** Calculates the absolute deviation of the cumulative nutrients from target metrics, applying massive penalties (e.g., `+15000` to `+30000` to the error score) if constraints are violated (e.g., exceeding 60g protein for CKD, including gluten for Celiac, or sodium > 1500mg for Hypertension).
-*   **Selection & Breed Cycle:** Keeps the top 20% fittest configurations, performs single-point crossovers to create child configurations, and applies a 20% mutation probability to alter ingredient weights.
+- /profile (GET/POST), on GET, renders the profile form pre-filled from the database. On POST, reads the submitted biometrics, conditions, and preferences, save them, then recalculates and save macro targets server-side as a fallback to the client-side JavaScript calculation.
 
----
+- / (GET/POST) This is the main dashboard. On POST, it reads the chosen engine, targets, conditions, and preferences from the form. For the Gemini engine, it creates a detailed system instruction that insert the user's macros targets and active medical guardrails into the prompt, calls gemini-2.5-flash with response_mime_type="application/json". It, then, parse the returned JSON and stored the structured meal plan in the session before redirecting to /results. In case Gemini fails for any reason, the route automatically falls back to the genetic engine, which fetch the food library, filter it, and runs run_genetic_algorithm().
 
-## 🗄️ Database Schema
+- /results reads the meal plan and engine type from the session, computes actual nutrients totals, calls calculate_meal_risk(), and render results.html with everything the template needs.
 
-The SQLite database (`meal_matcher.db`) is structured with three primary tables to manage credentials, wellness profiles, and food items:
+**`helpers.py`:**
+This file contains the two main algorithm functions that power the Genetic Portion Optimizer engine.
 
-```mermaid
-erDiagram
-    users ||--o| user_profiles : "has one"
-    users {
-        INTEGER id PK
-        TEXT username
-        TEXT email
-        TEXT password_hash
-        TEXT reset_code_hash
-        INTEGER reset_code_expires_at
-    }
-    user_profiles {
-        INTEGER user_id PK, FK
-        INTEGER age
-        TEXT gender
-        REAL weight_kg
-        REAL height_cm
-        TEXT activity_level
-        TEXT goal
-        TEXT conditions
-        TEXT preferences
-        INTEGER target_calories
-        INTEGER target_protein
-        INTEGER target_carbs
-        INTEGER target_fat
-    }
-    foods {
-        INTEGER id PK
-        TEXT name
-        INTEGER calories
-        REAL protein
-        REAL carbs
-        REAL fat
-        INTEGER serving_size_g
-        INTEGER sodium_mg
-        INTEGER glycemic_index_high
-        INTEGER cholesterol_mg
-    }
-```
+calculate_fitness(meal, targets, conditions) is the evaluation function of the genetic algorithm. It loops through every ingredient in a meal, scales each nutrient by grams/100.0, and sums the total calories, protein, carbs, fat, sodium, and cholesterol. It then computes a weighted error score, where protein and carbs are multiplied by 6 and fat by 9, which allows for the overall calculation of their caloric densities and present how far the meal from the user's targets. After the base error is calculated, it applies conditional penalty blocks for each active medical condition. For hypertension, it adds a heavy penalty when sodium exceeds 1500mg, for diabetes and gestational diabetes penalize high glycemic ingredients and carbs overruns, and CKD penalizes protein above 60g, etc. Overall, a lower final score means a better meal.
 
----
+generate_random_meal(food_library) creates a single random meal by sampling 3 to 5 unique foods from the library and assigning each a random portion between 50g and 300g.
 
-## 📁 File Structure & Descriptions
 
-Below is a walkthrough of the files included in the project directory:
+run_genetic_algorithm(food_library, targets, conditions) begins by generating a random population of 50 meals. Each generation, the population is sorted by fitness score (ascending since lower is better) and the algorithm exits early if the best meal reaches a near perfect score below 10. The top 20% are kept as parents, and new child meals are bred by taking a random split of ingredients from two parents and applying a 20% chance mutation that shift one ingredient's portion by up to ±30g. After 100 generations (or early exit), the best score meal from the final sorted population is returned.
 
-```
-cs50x_final_project/
-├── meal_matcher/
-│   ├── .env                    # Configures secret keys, API credentials, and SMTP settings.
-│   ├── app.py                  # Main Flask application controller handling routes, sessions, and APIs.
-│   ├── helpers.py              # Implementation of the Genetic Algorithm and fitness functions.
-│   ├── meal_matcher.db         # SQLite database storing users, profiles, and foods.
-│   └── requirements.txt        # Defines all required Python dependency packages.
-├── static/
-│   ├── script.js               # Client-side validation and loading states.
-│   └── styles.css              # Custom styling, fonts, and responsive grid layouts.
-└── templates/
-    ├── forgot_password.html    # Password reset code request form.
-    ├── index.html              # Main dashboard to trigger meal planning.
-    ├── layout.html             # Base layout template with navbar, footer, and flash messages.
-    ├── login.html              # Secure user login portal.
-    ├── profile.html            # Health profile dashboard (Mifflin-St Jeor metric calculator).
-    ├── register.html           # User registration form.
-    ├── reset_password.html     # Security code reset page.
-    └── results.html            # Output results rendering recipes, totals, and risk warnings.
-```
+**`meal_matcher.db`:** This is the SQLite database file. It holds three tables. The users table stores each account's email, PBKDF2 password hash, and reset code data. The user_profile table stores one row per user with all physical metrics like age, gender, weight, height, activity level, goal, comma-separated strings for active conditions and preferences, and the four calculated macro targets. The foods table is the ingredient library that backs the genetic optimizer.
 
-### File Details
-*   **`meal_matcher/app.py`:** Controls application routing. Manages logins, signups, profile updates, and the secure password reset flow. Contains clinical rule triggers like `calculate_meal_risks` and manages calls to the Google Gemini API.
-*   **`meal_matcher/helpers.py`:** Holds the genetic algorithm logic. Contains the evolutionary loop (`run_genetic_algorithm`), fitness function (`calculate_fitness`), and ingredient portion generators.
-*   **`templates/layout.html`:** The standard template defining page hierarchy, navigation bar, alerts, and stylesheet integration.
-*   **`templates/profile.html`:** Features the profile management form. Contains embedded JavaScript to calculate BMR and TDEE on the fly, auto-populating recommended macronutrient goals.
-*   **`templates/index.html`:** Renders the dashboard screen showing current wellness metrics and input controls for medical conditions, macro overrides, and custom requests.
-*   **`templates/results.html`:** Displays the finalized nutrition plan. Formats either the 4 AI recipes or the Genetic Optimizer weight spreadsheet, alongside comparison charts showing actual intake vs targets and active risk warnings.
-*   **`static/styles.css`:** A custom CSS system written with a modern aesthetic, containing fluid styling, animations, responsive breakpoints, and glassmorphic elements.
-*   **`static/script.js`:** Prevents form resubmission by disabling buttons and changing button labels dynamically upon submission.
 
----
+`layout.html`: This file is the base template. It composes of the HTML blueprint that other HTML files inherit from using Jinja2's {% extends %} system. <!DOCTYPE html> tells the browser this is an HTML5 document. <link rel="stylesheet"> tag load Outfit and Plus Jakarta Sans fonts from Google Fonts for modern typography. A {% if session.get("user_id") %} conditional renders different navigation links based on login state where authenticated users see Dashboard, My profile, and Logout, while guests see Login and Register. {% with messages = get_flashed_messages() %} renders flash messages, which is a one-time notifications Flask's flash() in python. The {% block body %}{% endblock %} is a Jinja2 template block that allows child templates like `index.html` to insert their content.
 
-## 🎨 Design Choices & Rationales
+`index.html`: This file is the main dashboard template that the logged in user lands on. It extends layout.html and renders a personalized welcome card that displays the user's username, weight, height, and active goal pulled from session and profile context variables. Below that is the plan generation form. A hidden input name="engine" value="gemini"> field responsible of telling the backend which optimizer to use. To the right of the text is a panel exposing the four macro target input prefilled from the user's profile. Two accordion sections of checkboxes let the user select the medical condition/s and dietary preference/s that fit their needs. All checkboxes are pre-checked based on the conditions and preferences stored in the user's profile.
 
-1.  **Flask & SQLite (Python):** Flask was chosen as the framework due to its lightweight nature, allowing us to implement a custom dual-engine planner and database structure. SQLite provides a self-contained, serverless data store ideal for project portability.
-2.  **Dual-Engine Architecture (Generative + Genetic):** LLMs excel at generating creative, chef-style recipes but occasionally struggle with precise multi-constraint mathematical optimizations. Conversely, genetic algorithms are excellent at math and logic constraint satisfaction but cannot write readable recipes. Combining them provides the best of both worlds, with the genetic algorithm serving as a portion-balancing fallback.
-3.  **Local SMTP Fallback:** When a mail server is not configured in the `.env` file, the application logs the recovery code to the command terminal. This ensures password recovery can still be tested and graded in a local development environment.
-4.  **Programmatic Multimedia:** Programmatically mapping user recipes to beautiful Unsplash images based on title keywords and adding a YouTube cooking search query shortcut allows the application to remain fast and lightweight while maintaining a premium appearance.
+`profile.html`: This file is the wellness profile setup page. It extends layout.html and renders three panels for collecting Physical Metrics, Medical Conditions, and provide medical macros. The <script> block is the substantial part of this file as it implement real-time and client-side recalculation using the Mifflin-St Jeor equation for BMR (10 × weight + 6.25 × height − 5 × age + 5 for males, −161 for females). For computing the TDEE, BMR should be multiplied by an activity multiplier ranging from 1.2 (sedentary) to 1.9 (extra active). The calorie target is then adjusted by −500 for weight loss or +350 for muscle gain. Protein is set at 1.6g/kg of bodyweight by default, raised to 2.2g/kg when High Protein is selected, and capped at 60g when CKD is active. Fat allocation is 25% of calories normally, 40% for Low Carb, and 70% for Keto. The remaining calories after protein and fat are assigned as carbohydrates, with an additional 40% carb cap enforced when diabetes is checked. Whenever any input or checkbox changes, the macro fields and recommendation subtexts update instantly without a page reload.
 
----
 
-## ⚙️ Installation & How to Run
 
-### Prerequisites
-*   Python 3.10 or higher.
-*   A Google Gemini API key.
+**`styles.css`**:
+This file is the single global stylesheet linked in layout.html. It defines the overall visual design system for the application using CSS custom properties for colors, spacing, border-radii, and shadows. It styles the header, navigation, footer, all form elements, the dashboard's two-column grid, the profile page's three-column grid, the results metrics cards, the recipe cards with their image overlays, the risk assessment grid, the nutrient totals table, and all authentication form containers. The stylesheet is mobile-friendly and uses @media queries to collapse multi-column layouts to single columns on narrow screens.
 
-### Setup Steps
-1.  **Navigate to the project directory:**
-    ```bash
-    cd cs50x_final_project
-    ```
-2.  **Create and activate a virtual environment:**
-    ```bash
-    python3 -m venv .venv
-    source .venv/bin/activate
-    ```
-3.  **Install the required dependencies:**
-    ```bash
-    pip install -r meal_matcher/requirements.txt
-    ```
-4.  **Configure environment variables:**
-    Rename or create a `.env` file inside `meal_matcher/` and enter your credentials:
-    ```ini
-    GEMINI_API_KEY="your_actual_gemini_api_key_here"
-    SECRET_KEY="choose_a_long_random_string_for_sessions"
+**`results.html`**: This file is the meal plan output page. It extends layout.html and renders different UI depending on which engine the backend stored in the session. A header box shows the active goals and an engine badge. Below that, if any medical conditions were active, a risk grid renders one card per condition produced by calculate_meal_risks(), coloured red for "High Risk" and green for "Low Risk". Then a six-card metrics grid shows the plan's actual totals for calories, protein, carbs, fat, sodium, and cholesterol alongside their targets. For gemini engine, the page renders a responsive grid of four recipe cards. One for each meal breakfast, lunch, dinner, and snack. Each card shows a Jinja2-selected Unsplash photograph that maps the meal title's keywords to the most relevant food image. A YouTube overlay on each image links to a video tutorial search and below the image is ingredients list, numbered instructions, and per-meal macro badges. For the Genetic engine, the page renders an HTML table with one row per ingredient, which shows food name, calculated portion weight, and per-portion values for calories, protein, carbs, fat, sodium, and cholesterol, alongside a YouTube video guide link. A "Back to Dashboard" button at the bottom closes the results view.
 
-    # Optional Email Settings (Will log to console if left blank)
-    MAIL_SERVER="smtp.gmail.com"
-    MAIL_PORT=587
-    MAIL_USE_TLS=true
-    MAIL_USERNAME="your_email@gmail.com"
-    MAIL_PASSWORD="your_app_specific_password"
-    MAIL_DEFAULT_SENDER="Meal Matcher Support <your_email@gmail.com>"
-    ```
-5.  **Run the Flask development server:**
-    ```bash
-    cd meal_matcher
-    flask run
-    ```
-6.  **Access the application:**
-    Open your web browser and navigate to `http://127.0.0.1:5000/`.
-```
 
-***
+**`login.html`**, **`register.html`**, **`forgot_password.html`**, **`reset_password.html`**: These four files are the authentication templates, all extending layout.html. Each renders a centered form card with input fields, inline error and success messages via {% if error %} and {% if success %} blocks, and cross-links to the other auth pages.
 
-### Summary of what was analyzed to build this README:
-- **`app.py`**: Explored all Flask routes (`/register`, `/login`, `/forgot_password`, `/reset_password`, `/profile`, `/results`, `/`), session keys, helper integrations, SMTP mailing functions, database queries, and the structured system instruction schema passed to Google's GenAI client.
-- **`helpers.py`**: Inspected the core mathematical structure of the Genetic Portion Optimizer. Reviewed parameters like generations (100), population size (50), mutation chances (20%), and custom fitness scoring formulas reflecting physical medical guardrails (CKD protein caps, Diabetes glycemic counts, IBS exclusions, Celiac gluten violations, and Hypertension sodium thresholds).
-- **Templates & Static Assets**: Reviewed metrics and inputs from `profile.html` (including Mifflin-St Jeor calculation parameters), UI forms in `index.html`, visual layout rules in `layout.html`, recipe card outputs mapping programmatically to Unsplash keywords in `results.html`, and CSS/JS integrations.
+**`script.js`**:
+This file runs a DOMContentLoaded listener that attaches two submit-state handlers. The first targets the .prompt-form on the dashboard. On the submit it reads the selected engine, disables the submit button, and replace its label with contextual loading message, so the user knows the request is being processed. The second targets the .profile-form on the profile page and similarly disables and relabels the save button. These handlers prevent accidental double-submissions and give clear feedback during the seconds it takes the server to run inference or evolve a meal plan.
