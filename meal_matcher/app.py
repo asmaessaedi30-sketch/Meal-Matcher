@@ -60,6 +60,24 @@ db.execute(
     """
 )
 
+# Create cached_meal_plans table if it does not exist
+db.execute(
+    """
+    CREATE TABLE IF NOT EXISTS cached_meal_plans (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        conditions TEXT,
+        preferences TEXT,
+        target_calories INTEGER,
+        target_protein INTEGER,
+        target_carbs INTEGER,
+        target_fat INTEGER,
+        user_prompt TEXT,
+        meal_plan_json TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """
+)
+
 # Insert standard food items if they aren't already present
 default_foods = [
     ("Chicken Breast", 165, 31.0, 0.0, 3.6, 100, 74, 0, 85),
@@ -569,7 +587,8 @@ def index():
             "ckd": "Chronic Kidney Disease (CKD)",
             "cholesterol": "High Cholesterol",
             "celiac": "Celiac Disease",
-            "ibs": "IBS / Low-FODMAP"
+            "ibs": "IBS / Low-FODMAP",
+            "postpartum": "Postpartum Recovery"
         }
         
         preference_labels = {
@@ -587,6 +606,41 @@ def index():
         selected_preference_text = ", ".join(preference_labels[p] for p in preferences) or "none"
         
         if engine == "gemini":
+            # Normalize parameters for cache lookup
+            cond_cache_str = ",".join(sorted(conditions))
+            pref_cache_str = ",".join(sorted(preferences))
+            prompt_cache_str = user_prompt.lower().strip()
+
+            # Attempt to retrieve a cached plan matching these exact parameters
+            cached_plan = db.execute(
+                """
+                SELECT meal_plan_json FROM cached_meal_plans 
+                WHERE conditions = ? AND preferences = ? AND user_prompt = ?
+                  AND target_calories = ? AND target_protein = ? AND target_carbs = ? AND target_fat = ?
+                ORDER BY id DESC LIMIT 1
+                """,
+                cond_cache_str,
+                pref_cache_str,
+                prompt_cache_str,
+                targets["calories"],
+                targets["protein"],
+                targets["carbs"],
+                targets["fat"]
+            )
+
+            if cached_plan:
+                try:
+                    meal_plan = json.loads(cached_plan[0]["meal_plan_json"])
+                    session["engine"] = "gemini"
+                    session["meal_plan"] = meal_plan
+                    session["targets"] = targets
+                    session["original_prompt"] = user_prompt or "Custom AI Balanced Plan"
+                    session["conditions"] = conditions
+                    session["preferences"] = preferences
+                    return redirect("/results")
+                except Exception as cache_err:
+                    app.logger.error(f"Failed to parse cached JSON: {cache_err}")
+
             system_instruction = f"""
             You are a clinical nutrition and custom meal planning engine.
             The user wants a customized, daily meal plan based on these preferences and medical guidelines:
@@ -682,6 +736,26 @@ def index():
                     )
                 )
                 meal_plan = json.loads(response.text)
+
+                # Save successful plan to cache
+                try:
+                    db.execute(
+                        """
+                        INSERT INTO cached_meal_plans 
+                        (conditions, preferences, target_calories, target_protein, target_carbs, target_fat, user_prompt, meal_plan_json)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                        """,
+                        cond_cache_str,
+                        pref_cache_str,
+                        targets["calories"],
+                        targets["protein"],
+                        targets["carbs"],
+                        targets["fat"],
+                        prompt_cache_str,
+                        response.text
+                    )
+                except Exception as save_cache_err:
+                    app.logger.error(f"Failed to save plan to cache: {save_cache_err}")
                 
                 # Format to session
                 session["engine"] = "gemini"

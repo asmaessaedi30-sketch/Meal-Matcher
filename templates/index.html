@@ -104,6 +104,11 @@
                             <span class="checkmark"></span>
                             IBS / Low-FODMAP
                         </label>
+                        <label class="check-item">
+                            <input type="checkbox" name="conditions" value="postpartum" {% if 'postpartum' in conditions %}checked{% endif %}>
+                            <span class="checkmark"></span>
+                            Postpartum Recovery
+                        </label>
                     </div>
                 </div>
 
@@ -153,8 +158,39 @@
                     </div>
                 </div>
 
+                <div class="accordion-section">
+                    <h4>💪 Extras</h4>
+                    <div class="checkbox-list">
+                        <label class="check-item" style="color: #4a90e2; font-weight: bold;">
+                            <input type="checkbox" name="include_exercise" value="yes" checked>
+                            <span class="checkmark" style="border-color: #4a90e2;"></span>
+                            🏋️ Include Personalized Exercise Plan
+                        </label>
+                    </div>
+                </div>
+
             </div>
         </div>
     </form>
 </div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const promptForm = document.querySelector(".prompt-form");
+    const submitBtn = document.querySelector(".generate-btn");
+    
+    if (promptForm && submitBtn) {
+        promptForm.addEventListener("submit", function() {
+            submitBtn.innerHTML = "🧠 AI is generating your plan in parallel...";
+            submitBtn.style.opacity = "0.7";
+            submitBtn.style.cursor = "wait";
+            
+            // Prevent multiple submissions
+            setTimeout(() => {
+                submitBtn.disabled = true;
+            }, 10);
+        });
+    }
+});
+</script>
 {% endblock %}
