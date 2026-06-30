@@ -72,11 +72,18 @@ db.execute(
         target_carbs INTEGER,
         target_fat INTEGER,
         user_prompt TEXT,
+        include_exercise INTEGER DEFAULT 0,
         meal_plan_json TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
     """
 )
+
+# Database migration to add include_exercise to existing tables (robust for deployed servers)
+try:
+    db.execute("ALTER TABLE cached_meal_plans ADD COLUMN include_exercise INTEGER DEFAULT 0")
+except Exception:
+    pass
 
 # Insert standard food items if they aren't already present
 default_foods = [
@@ -558,6 +565,7 @@ def index():
     if request.method == "POST":
         user_prompt = request.form.get("user_prompt", "").strip()
         engine = request.form.get("engine", "gemini")
+        include_exercise = request.form.get("include_exercise") == "yes"
         
         conditions = [c for c in request.form.getlist("conditions") if c in VALID_CONDITIONS]
         preferences = [p for p in request.form.getlist("preferences") if p in VALID_PREFERENCES]
@@ -611,12 +619,13 @@ def index():
             pref_cache_str = ",".join(sorted(preferences))
             prompt_cache_str = user_prompt.lower().strip()
 
-            # Attempt to retrieve a cached plan matching these exact parameters
+            # Attempt to retrieve a cached plan matching these exact parameters (including include_exercise)
             cached_plan = db.execute(
                 """
                 SELECT meal_plan_json FROM cached_meal_plans 
                 WHERE conditions = ? AND preferences = ? AND user_prompt = ?
                   AND target_calories = ? AND target_protein = ? AND target_carbs = ? AND target_fat = ?
+                  AND include_exercise = ?
                 ORDER BY id DESC LIMIT 1
                 """,
                 cond_cache_str,
@@ -625,7 +634,8 @@ def index():
                 targets["calories"],
                 targets["protein"],
                 targets["carbs"],
-                targets["fat"]
+                targets["fat"],
+                1 if include_exercise else 0
             )
 
             if cached_plan:
@@ -637,9 +647,61 @@ def index():
                     session["original_prompt"] = user_prompt or "Custom AI Balanced Plan"
                     session["conditions"] = conditions
                     session["preferences"] = preferences
+                    session["include_exercise"] = include_exercise
                     return redirect("/results")
                 except Exception as cache_err:
                     app.logger.error(f"Failed to parse cached JSON: {cache_err}")
+
+            # Define conditional prompt segments for exercises
+            exercise_instruction = ""
+            exercise_schema_field = ""
+            if include_exercise:
+                exercise_instruction = f"""
+                Additionally, the user requested a personalized exercise routine. You MUST generate a progressive, medically-adapted routine that aligns with their biometrics and selected conditions. Follow these guidelines:
+                1. Every exercise must include target metrics: sets/reps (e.g. '3 sets of 10 reps' or '30s hold'), execution tempo (e.g., 2-0-2-0), rest intervals, and intensity (e.g. RPE 1-10 or weight percentage).
+                2. Medical Adaptation: If they have any medical conditions, substitute high-risk movements with safe alternatives and document the clinical reason in the 'modification_reason' field. For example:
+                   - Hypertension: Avoid Valsalva maneuver or heavy over-head loading; substitute with exercises like Pallof Presses or Bird-Dogs, and note 'Replaced overhead barbell presses due to hypertension to prevent blood pressure spikes'.
+                   - Type 2 Diabetes & Gestational Diabetes: Focus on moderate resistance training or dynamic movements to improve insulin sensitivity, and note 'Selected to optimize glucose uptake'.
+                   - Chronic Kidney Disease (CKD): Note any relevant fatigue management adaptations.
+                3. YouTube search string: For every exercise, provide a precise, clean YouTube query string (e.g., 'how to properly perform bird dog row form tutorial') in the 'youtube_query' field. Do not output URLs.
+                """
+                exercise_schema_field = """
+                "exercise_plan": {
+                    "warm_up": [
+                        {
+                            "name": "string",
+                            "sets_reps": "string",
+                            "tempo": "string",
+                            "rest": "string",
+                            "intensity": "string",
+                            "youtube_query": "string",
+                            "modification_reason": "string (empty if none)"
+                        }
+                    ],
+                    "core_workout": [
+                        {
+                            "name": "string",
+                            "sets_reps": "string",
+                            "tempo": "string",
+                            "rest": "string",
+                            "intensity": "string",
+                            "youtube_query": "string",
+                            "modification_reason": "string (empty if none)"
+                        }
+                    ],
+                    "cool_down": [
+                        {
+                            "name": "string",
+                            "sets_reps": "string",
+                            "tempo": "string",
+                            "rest": "string",
+                            "intensity": "string",
+                            "youtube_query": "string",
+                            "modification_reason": "string (empty if none)"
+                        }
+                    ]
+                },
+                """
 
             system_instruction = f"""
             You are a clinical nutrition and custom meal planning engine.
@@ -662,6 +724,8 @@ def index():
             9. Gluten-Free / Dairy-Free: Respect as requested.
             10. Gestational Diabetes: Safe, pregnancy-friendly complex carbohydrate portioning distributed throughout the day, low glycemic index, zero refined sugars, paired with adequate proteins and healthy fats to prevent glucose spikes.
             
+            {exercise_instruction}
+
             CRITICAL PERFORMANCE RULE (FOR GENERATION SPEED):
             To minimize latency and ensure near-instant output, keep the text extremely concise:
             - "description" MUST be exactly one brief sentence (max 12 words).
@@ -714,6 +778,7 @@ def index():
                     "carbs": number,
                     "fat": number
                 }},
+                {exercise_schema_field}
                 "actual_totals": {{
                     "calories": integer,
                     "protein": number,
@@ -742,8 +807,8 @@ def index():
                     db.execute(
                         """
                         INSERT INTO cached_meal_plans 
-                        (conditions, preferences, target_calories, target_protein, target_carbs, target_fat, user_prompt, meal_plan_json)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                        (conditions, preferences, target_calories, target_protein, target_carbs, target_fat, user_prompt, include_exercise, meal_plan_json)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                         """,
                         cond_cache_str,
                         pref_cache_str,
@@ -752,6 +817,7 @@ def index():
                         targets["carbs"],
                         targets["fat"],
                         prompt_cache_str,
+                        1 if include_exercise else 0,
                         response.text
                     )
                 except Exception as save_cache_err:
@@ -764,6 +830,7 @@ def index():
                 session["original_prompt"] = user_prompt or "Custom AI Balanced Plan"
                 session["conditions"] = conditions
                 session["preferences"] = preferences
+                session["include_exercise"] = include_exercise
                 return redirect("/results")
             except Exception as e:
                 # Log the error for debugging

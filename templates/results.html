@@ -3,234 +3,426 @@
 {% block body %}
 <div class="results-container">
     <div class="results-header-box">
-        <h2>Your Personalized Wellness Meal Plan</h2>
+        <h2>Your Personalized Wellness Plan</h2>
         <p class="original-prompt"><strong>Active goals/focus:</strong> "<i>{{ prompt }}</i>"</p>
         <span class="engine-badge">{% if engine == 'gemini' %}✨ Wellness Assistant Plan{% else %}🧬 Database Optimized Plan{% endif %}</span>
     </div>
 
-    <!-- Health Risk Alerts -->
-    {% if risk_assessments %}
-    <div class="risk-section">
-        <h3>🩺 Safety & Medical Risk Evaluation</h3>
-        <div class="risk-grid">
-            {% for risk in risk_assessments %}
-            <div class="risk-card {{ 'risk-high' if risk.level == 'High Risk' else 'risk-low' }}">
-                <div class="risk-card-header">
-                    <h4>{{ risk.condition }}</h4>
-                    <span class="risk-badge">{{ risk.level }}</span>
-                </div>
-                <p class="risk-reason">{{ risk.reason }}</p>
-            </div>
-            {% endfor %}
-        </div>
+    {% if engine == 'gemini' and meal_plan.exercise_plan %}
+    <!-- Interactive Layout Tabs -->
+    <div class="plan-tabs">
+        <button class="tab-btn active" onclick="switchTab(event, 'nutrition-tab')">🍽️ Daily Nutrition & Meals</button>
+        <button class="tab-btn" onclick="switchTab(event, 'exercise-tab')">🏋️ Medical Workout Routine</button>
     </div>
     {% endif %}
 
-    <!-- Nutrient Metrics Comparison Grid -->
-    <div class="metrics-grid">
-        <div class="metric-card">
-            <h3>Calories</h3>
-            <p class="metric-val">{{ totals.calories }} <span class="unit">kcal</span></p>
-            <p class="metric-target">Target: {{ targets.calories }} kcal</p>
-        </div>
-        <div class="metric-card pro-card">
-            <h3>Protein</h3>
-            <p class="metric-val">{{ totals.protein | round(1) }} <span class="unit">g</span></p>
-            <p class="metric-target">Target: {{ targets.protein }} g</p>
-        </div>
-        <div class="metric-card carb-card">
-            <h3>Carbohydrates</h3>
-            <p class="metric-val">{{ totals.carbs | round(1) }} <span class="unit">g</span></p>
-            <p class="metric-target">Target: {{ targets.carbs }} g</p>
-        </div>
-        <div class="metric-card fat-card">
-            <h3>Fats</h3>
-            <p class="metric-val">{{ totals.fat | round(1) }} <span class="unit">g</span></p>
-            <p class="metric-target">Target: {{ targets.fat }} g</p>
-        </div>
-        <div class="metric-card">
-            <h3>Sodium</h3>
-            <p class="metric-val">{{ totals.sodium_mg | int }} <span class="unit">mg</span></p>
-            <p class="metric-target">Hypertension cap: 1500 mg</p>
-        </div>
-        <div class="metric-card">
-            <h3>Cholesterol</h3>
-            <p class="metric-val">{{ totals.cholesterol_mg | int }} <span class="unit">mg</span></p>
-            <p class="metric-target">Cholesterol cap: 200 mg</p>
-        </div>
-    </div>
-
-    <!-- Meal Plan Display -->
-    <div class="meal-display-section">
-        {% if engine == 'gemini' %}
-        <!-- AI Recipe Cards -->
-        <div class="meals-grid">
-            {% for meal_key in ['breakfast', 'lunch', 'dinner', 'snack'] %}
-            {% if meal_plan[meal_key] %}
-            {% set meal = meal_plan[meal_key] %}
-            <div class="meal-recipe-card">
-                <div class="meal-recipe-header">
-                    <span class="meal-badge {{ meal_key }}">
-                        {% if meal_key == 'breakfast' %}🍳 Breakfast
-                        {% elif meal_key == 'lunch' %}🥗 Lunch
-                        {% elif meal_key == 'dinner' %}🍲 Dinner
-                        {% else %}🍎 Snack{% endif %}
-                    </span>
-                    <span class="meal-time">⏱️ {{ meal.prep_time }}</span>
-                </div>
-                
-                {# Map title keywords to a highly professional, curated Unsplash food photograph #}
-                {% set t_lower = meal.title.lower() %}
-                {% if 'salmon' in t_lower %}
-                    {% set img_url = 'https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?w=600&auto=format&fit=crop' %}
-                {% elif 'cod' in t_lower %}
-                    {% set img_url = 'https://images.unsplash.com/photo-1534604973900-c43ab4c2e0ab?w=600&auto=format&fit=crop' %}
-                {% elif 'fish' in t_lower or 'seafood' in t_lower or 'shrimp' in t_lower or 'tuna' in t_lower %}
-                    {% set img_url = 'https://images.unsplash.com/photo-1534604973900-c43ab4c2e0ab?w=600&auto=format&fit=crop' %}
-                {% elif 'pancake' in t_lower %}
-                    {% set img_url = 'https://images.unsplash.com/photo-1528207776546-365bb710ee93?w=600&auto=format&fit=crop' %}
-                {% elif 'oat' in t_lower or 'porridge' in t_lower %}
-                    {% set img_url = 'https://images.unsplash.com/photo-1517686469429-8bdb88b9f907?w=600&auto=format&fit=crop' %}
-                {% elif 'egg' in t_lower or 'scramble' in t_lower or 'omelet' in t_lower or 'frittata' in t_lower %}
-                    {% set img_url = 'https://images.unsplash.com/photo-1525351484163-7529414344d8?w=600&auto=format&fit=crop' %}
-                {% elif 'toast' in t_lower or 'bread' in t_lower or 'sandwich' in t_lower %}
-                    {% set img_url = 'https://images.unsplash.com/photo-1509722747041-616f39b57569?w=600&auto=format&fit=crop' %}
-                {% elif 'smoothie' in t_lower or 'shake' in t_lower or 'drink' in t_lower %}
-                    {% set img_url = 'https://images.unsplash.com/photo-1553530666-ba11a7da3888?w=600&auto=format&fit=crop' %}
-                {% elif 'salad' in t_lower %}
-                    {% set img_url = 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=600&auto=format&fit=crop' %}
-                {% elif 'soup' in t_lower or 'stew' in t_lower %}
-                    {% set img_url = 'https://images.unsplash.com/photo-1547592165-e1d17fed6006?w=600&auto=format&fit=crop' %}
-                {% elif 'chicken' in t_lower or 'turkey' in t_lower or 'poultry' in t_lower %}
-                    {% set img_url = 'https://images.unsplash.com/photo-1598515214211-89d3e73ae83b?w=600&auto=format&fit=crop' %}
-                {% elif 'beef' in t_lower or 'steak' in t_lower or 'meat' in t_lower or 'pork' in t_lower %}
-                    {% set img_url = 'https://images.unsplash.com/photo-1544025162-d76694265947?w=600&auto=format&fit=crop' %}
-                {% elif 'tofu' in t_lower %}
-                    {% set img_url = 'https://images.unsplash.com/photo-1584269600464-37b1b58a9fe7?w=600&auto=format&fit=crop' %}
-                {% elif 'cottage' in t_lower %}
-                    {% set img_url = 'https://images.unsplash.com/photo-1551462147-ff29053bfc14?w=600&auto=format&fit=crop' %}
-                {% elif 'yogurt' in t_lower or 'parfait' in t_lower %}
-                    {% set img_url = 'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=600&auto=format&fit=crop' %}
-                {% elif 'cheese' in t_lower %}
-                    {% set img_url = 'https://images.unsplash.com/photo-1486887396153-fa416526c132?w=600&auto=format&fit=crop' %}
-                {% elif 'avocado' in t_lower %}
-                    {% set img_url = 'https://images.unsplash.com/photo-1523049673857-eb18f1d7b578?w=600&auto=format&fit=crop' %}
-                {% elif 'cucumber' in t_lower %}
-                    {% set img_url = 'https://images.unsplash.com/photo-1449300079323-02e209d9d3a6?w=600&auto=format&fit=crop' %}
-                {% elif 'nut' in t_lower or 'peanut' in t_lower or 'almond' in t_lower or 'seed' in t_lower or 'chia' in t_lower %}
-                    {% set img_url = 'https://images.unsplash.com/photo-1511124690914-9b85097f6c39?w=600&auto=format&fit=crop' %}
-                {% elif 'fruit' in t_lower or 'berry' in t_lower or 'apple' in t_lower or 'banana' in t_lower %}
-                    {% set img_url = 'https://images.unsplash.com/photo-1505253716362-afaea1d3d1af?w=600&auto=format&fit=crop' %}
-                {% elif 'vegan' in t_lower or 'lentil' in t_lower or 'bean' in t_lower or 'quinoa' in t_lower or 'rice' in t_lower %}
-                    {% set img_url = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&auto=format&fit=crop' %}
-                {% else %}
-                    {# Fallbacks based on meal key #}
-                    {% if meal_key == 'breakfast' %}
-                        {% set img_url = 'https://images.unsplash.com/photo-1525351484163-7529414344d8?w=600&auto=format&fit=crop' %}
-                    {% elif meal_key == 'lunch' %}
-                        {% set img_url = 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=600&auto=format&fit=crop' %}
-                    {% elif meal_key == 'dinner' %}
-                        {% set img_url = 'https://images.unsplash.com/photo-1532550907401-a500c9a57435?w=600&auto=format&fit=crop' %}
-                    {% else %}
-                        {% set img_url = 'https://images.unsplash.com/photo-1505253716362-afaea1d3d1af?w=600&auto=format&fit=crop' %}
-                    {% endif %}
-                {% endif %}
-                
-                <div class="meal-image-wrapper">
-                    <img class="meal-photo" src="{{ img_url }}" alt="{{ meal.title }}">
-                    <a href="https://www.youtube.com/results?search_query=how+to+make+{{ meal.title | urlencode }}" target="_blank" class="youtube-play-overlay">
-                        <div class="play-btn-circle">
-                            <span class="play-icon">▶</span>
-                        </div>
-                        <span class="overlay-text">Watch Video Tutorial</span>
-                    </a>
-                </div>
-                
-                <div class="meal-recipe-body">
-                    <h3>{{ meal.title }}</h3>
-                    <p class="meal-desc">{{ meal.description }}</p>
-                    
-                    <div class="meal-recipe-content">
-                        <div class="recipe-column">
-                            <h4>🛒 Ingredients</h4>
-                            <ul class="ingredient-list">
-                                {% for ing in meal.ingredients %}
-                                <li>{{ ing }}</li>
-                                {% endfor %}
-                            </ul>
-                        </div>
-                        
-                        <div class="recipe-column">
-                            <h4>📋 Directions</h4>
-                            <ol class="direction-list">
-                                {% for step in meal.instructions %}
-                                <li>{{ step }}</li>
-                                {% endfor %}
-                            </ol>
-                        </div>
+    <!-- TAB 1: NUTRITION & MEAL PLAN -->
+    <div id="nutrition-tab" class="tab-panel active">
+        <!-- Health Risk Alerts -->
+        {% if risk_assessments %}
+        <div class="risk-section">
+            <h3>🩺 Safety & Medical Risk Evaluation</h3>
+            <div class="risk-grid">
+                {% for risk in risk_assessments %}
+                <div class="risk-card {{ 'risk-high' if risk.level == 'High Risk' else 'risk-low' }}">
+                    <div class="risk-card-header">
+                        <h4>{{ risk.condition }}</h4>
+                        <span class="risk-badge">{{ risk.level }}</span>
                     </div>
+                    <p class="risk-reason">{{ risk.reason }}</p>
                 </div>
-                
-                <div class="meal-recipe-footer">
-                    <div class="macro-badges">
-                        <span class="macro-badge-item">⚡ <strong>{{ meal.calories }}</strong> kcal</span>
-                        <span class="macro-badge-item">💪 <strong>{{ meal.protein }}g</strong> Pro</span>
-                        <span class="macro-badge-item">🌾 <strong>{{ meal.carbs }}g</strong> Carb</span>
-                        <span class="macro-badge-item">🥑 <strong>{{ meal.fat }}g</strong> Fat</span>
-                    </div>
-                </div>
-            </div>
-            {% endif %}
-            {% endfor %}
-        </div>
-
-        {% else %}
-        <!-- Genetic Portion Optimization Table -->
-        <div class="meal-plan-section">
-            <h3>Ingredients & Calculated Portions</h3>
-            <p class="table-desc">Calculated precisely by the genetic algorithm based on local database food data.</p>
-            <div class="table-wrapper">
-                <table class="meal-table">
-                    <thead>
-                        <tr>
-                            <th>Food Item</th>
-                            <th>Portion Weight</th>
-                            <th>Calories</th>
-                            <th>Protein</th>
-                            <th>Carbs</th>
-                            <th>Fat</th>
-                            <th>Sodium</th>
-                            <th>Cholesterol</th>
-                            <th>Video Guide</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for item in meal_plan %}
-                        <tr>
-                            <td class="food-name">{{ item.name }}</td>
-                            <td class="food-weight"><strong>{{ item.grams }}g</strong></td>
-                            <td>{{ ((item.calories * item.grams) / 100) | int }} kcal</td>
-                            <td>{{ (((item.protein * item.grams) / 100) | round(1)) }}g</td>
-                            <td>{{ (((item.carbs * item.grams) / 100) | round(1)) }}g</td>
-                            <td>{{ (((item.fat * item.grams) / 100) | round(1)) }}g</td>
-                            <td>{{ ((item.sodium_mg * item.grams) / 100) | int }}mg</td>
-                            <td>{{ ((item.cholesterol_mg * item.grams) / 100) | int }}mg</td>
-                            <td>
-                                <a href="https://www.youtube.com/results?search_query=how+to+cook+{{ item.name | urlencode }}" target="_blank" class="table-action-link">
-                                    🎬 Search Video
-                                </a>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+                {% endfor %}
             </div>
         </div>
         {% endif %}
+
+        <!-- Nutrient Metrics Comparison Grid -->
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <h3>Calories</h3>
+                <p class="metric-val">{{ totals.calories }} <span class="unit">kcal</span></p>
+                <p class="metric-target">Target: {{ targets.calories }} kcal</p>
+            </div>
+            <div class="metric-card pro-card">
+                <h3>Protein</h3>
+                <p class="metric-val">{{ totals.protein | round(1) }} <span class="unit">g</span></p>
+                <p class="metric-target">Target: {{ targets.protein }} g</p>
+            </div>
+            <div class="metric-card carb-card">
+                <h3>Carbohydrates</h3>
+                <p class="metric-val">{{ totals.carbs | round(1) }} <span class="unit">g</span></p>
+                <p class="metric-target">Target: {{ targets.carbs }} g</p>
+            </div>
+            <div class="metric-card fat-card">
+                <h3>Fats</h3>
+                <p class="metric-val">{{ totals.fat | round(1) }} <span class="unit">g</span></p>
+                <p class="metric-target">Target: {{ targets.fat }} g</p>
+            </div>
+            <div class="metric-card">
+                <h3>Sodium</h3>
+                <p class="metric-val">{{ totals.sodium_mg | int }} <span class="unit">mg</span></p>
+                <p class="metric-target">Hypertension cap: 1500 mg</p>
+            </div>
+            <div class="metric-card">
+                <h3>Cholesterol</h3>
+                <p class="metric-val">{{ totals.cholesterol_mg | int }} <span class="unit">mg</span></p>
+                <p class="metric-target">Cholesterol cap: 200 mg</p>
+            </div>
+        </div>
+
+        <!-- Meal Plan Display -->
+        <div class="meal-display-section">
+            {% if engine == 'gemini' %}
+            <!-- AI Recipe Cards -->
+            <div class="meals-grid">
+                {% for meal_key in ['breakfast', 'lunch', 'dinner', 'snack'] %}
+                {% if meal_plan[meal_key] %}
+                {% set meal = meal_plan[meal_key] %}
+                <div class="meal-recipe-card">
+                    <div class="meal-recipe-header">
+                        <span class="meal-badge {{ meal_key }}">
+                            {% if meal_key == 'breakfast' %}🍳 Breakfast
+                            {% elif meal_key == 'lunch' %}🥗 Lunch
+                            {% elif meal_key == 'dinner' %}🍲 Dinner
+                            {% else %}🍎 Snack{% endif %}
+                        </span>
+                        <span class="meal-time">⏱️ {{ meal.prep_time }}</span>
+                    </div>
+                    
+                    {# Map title keywords to a highly professional, curated Unsplash food photograph #}
+                    {% set t_lower = meal.title.lower() %}
+                    {% if 'oat' in t_lower %}
+                        {% set img_url = 'https://images.unsplash.com/photo-1517686469429-8bdb88b9f907?w=600&auto=format&fit=crop' %}
+                    {% elif 'pancake' in t_lower %}
+                        {% set img_url = 'https://images.unsplash.com/photo-1528207776546-365bb710ee93?w=600&auto=format&fit=crop' %}
+                    {% elif 'egg' in t_lower or 'scramble' in t_lower or 'omelet' in t_lower or 'frittata' in t_lower %}
+                        {% set img_url = 'https://images.unsplash.com/photo-1525351484163-7529414344d8?w=600&auto=format&fit=crop' %}
+                    {% elif 'smoothie' in t_lower or 'shake' in t_lower or 'drink' in t_lower %}
+                        {% set img_url = 'https://images.unsplash.com/photo-1553530666-ba11a7da3888?w=600&auto=format&fit=crop' %}
+                    {% elif 'salad' in t_lower %}
+                        {% set img_url = 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=600&auto=format&fit=crop' %}
+                    {% elif 'salmon' in t_lower or 'fish' in t_lower or 'cod' in t_lower or 'seafood' in t_lower %}
+                        {% set img_url = 'https://images.unsplash.com/photo-1485962398705-ef6a13c41e8f?w=600&auto=format&fit=crop' %}
+                    {% elif 'chicken' in t_lower or 'turkey' in t_lower or 'poultry' in t_lower %}
+                        {% set img_url = 'https://images.unsplash.com/photo-1532550907401-a500c9a57435?w=600&auto=format&fit=crop' %}
+                    {% elif 'beef' in t_lower or 'steak' in t_lower or 'meat' in t_lower %}
+                        {% set img_url = 'https://images.unsplash.com/photo-1544025162-d76694265947?w=600&auto=format&fit=crop' %}
+                    {% elif 'tofu' in t_lower or 'vegan' in t_lower or 'lentil' in t_lower or 'bean' in t_lower or 'quinoa' in t_lower or 'rice' in t_lower %}
+                        {% set img_url = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&auto=format&fit=crop' %}
+                    {% elif 'fruit' in t_lower or 'berry' in t_lower or 'apple' in t_lower or 'banana' in t_lower %}
+                        {% set img_url = 'https://images.unsplash.com/photo-1505253716362-afaea1d3d1af?w=600&auto=format&fit=crop' %}
+                    {% elif 'yogurt' in t_lower or 'parfait' in t_lower or 'cottage' in t_lower or 'cheese' in t_lower or 'snack' in t_lower %}
+                        {% set img_url = 'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=600&auto=format&fit=crop' %}
+                    {% elif 'nut' in t_lower or 'peanut' in t_lower or 'almond' in t_lower or 'seed' in t_lower or 'chia' in t_lower %}
+                        {% set img_url = 'https://images.unsplash.com/photo-1511124690914-9b85097f6c39?w=600&auto=format&fit=crop' %}
+                    {% else %}
+                        {# Fallbacks based on meal key #}
+                        {% if meal_key == 'breakfast' %}
+                            {% set img_url = 'https://images.unsplash.com/photo-1525351484163-7529414344d8?w=600&auto=format&fit=crop' %}
+                        {% elif meal_key == 'lunch' %}
+                            {% set img_url = 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=600&auto=format&fit=crop' %}
+                        {% elif meal_key == 'dinner' %}
+                            {% set img_url = 'https://images.unsplash.com/photo-1532550907401-a500c9a57435?w=600&auto=format&fit=crop' %}
+                        {% else %}
+                            {% set img_url = 'https://images.unsplash.com/photo-1505253716362-afaea1d3d1af?w=600&auto=format&fit=crop' %}
+                        {% endif %}
+                    {% endif %}
+                    
+                    <div class="meal-image-wrapper">
+                        <img class="meal-photo" src="{{ img_url }}" alt="{{ meal.title }}">
+                        <a href="https://www.youtube.com/results?search_query=how+to+make+{{ meal.title | urlencode }}" target="_blank" class="youtube-play-overlay">
+                            <div class="play-btn-circle">
+                                <span class="play-icon">▶</span>
+                            </div>
+                            <span class="overlay-text">Watch Video Tutorial</span>
+                        </a>
+                    </div>
+                    
+                    <div class="meal-recipe-body">
+                        <h3>{{ meal.title }}</h3>
+                        <p class="meal-desc">{{ meal.description }}</p>
+                        
+                        <div class="meal-recipe-content">
+                            <div class="recipe-column">
+                                <h4>🛒 Ingredients</h4>
+                                <ul class="ingredient-list">
+                                    {% for ing in meal.ingredients %}
+                                    <li>{{ ing }}</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                            
+                            <div class="recipe-column">
+                                <h4>📋 Directions</h4>
+                                <ol class="direction-list">
+                                    {% for step in meal.instructions %}
+                                    <li>{{ step }}</li>
+                                    {% endfor %}
+                                </ol>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="meal-recipe-footer">
+                        <div class="macro-badges">
+                            <span class="macro-badge-item">⚡ <strong>{{ meal.calories }}</strong> kcal</span>
+                            <span class="macro-badge-item">💪 <strong>{{ meal.protein }}g</strong> Pro</span>
+                            <span class="macro-badge-item">🌾 <strong>{{ meal.carbs }}g</strong> Carb</span>
+                            <span class="macro-badge-item">🥑 <strong>{{ meal.fat }}g</strong> Fat</span>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                {% endfor %}
+            </div>
+    
+            {% else %}
+            <!-- Genetic Portion Optimization Table -->
+            <div class="meal-plan-section">
+                <h3>Ingredients & Calculated Portions</h3>
+                <p class="table-desc">Calculated precisely by the genetic algorithm based on local database food data.</p>
+                <div class="table-wrapper">
+                    <table class="meal-table">
+                        <thead>
+                            <tr>
+                                <th>Food Item</th>
+                                <th>Portion Weight</th>
+                                <th>Calories</th>
+                                <th>Protein</th>
+                                <th>Carbs</th>
+                                <th>Fat</th>
+                                <th>Sodium</th>
+                                <th>Cholesterol</th>
+                                <th>Video Guide</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in meal_plan %}
+                            <tr>
+                                <td class="food-name">{{ item.name }}</td>
+                                <td class="food-weight"><strong>{{ item.grams }}g</strong></td>
+                                <td>{{ ((item.calories * item.grams) / 100) | int }} kcal</td>
+                                <td>{{ (((item.protein * item.grams) / 100) | round(1)) }}g</td>
+                                <td>{{ (((item.carbs * item.grams) / 100) | round(1)) }}g</td>
+                                <td>{{ (((item.fat * item.grams) / 100) | round(1)) }}g</td>
+                                <td>{{ ((item.sodium_mg * item.grams) / 100) | int }}mg</td>
+                                <td>{{ ((item.cholesterol_mg * item.grams) / 100) | int }}mg</td>
+                                <td>
+                                    <a href="https://www.youtube.com/results?search_query=how+to+cook+{{ item.name | urlencode }}" target="_blank" class="table-action-link">
+                                        🎬 Search Video
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
+        </div>
     </div>
+
+    <!-- TAB 2: PERSONALIZED EXERCISE ROUTINE -->
+    {% if engine == 'gemini' and meal_plan.exercise_plan %}
+    <div id="exercise-tab" class="tab-panel">
+        <div class="exercise-actions-header">
+            <button onclick="copyWorkoutRoutine()" class="action-btn copy-btn">📋 Copy Workout Routine</button>
+        </div>
+
+        <div class="workout-phases-grid">
+            <!-- WARM-UP PHASE -->
+            <div class="workout-phase-column">
+                <div class="phase-header warm-up-header">
+                    <h3>🌅 Phase 1: Warm-up</h3>
+                    <span>Prepare joints & elevate heart rate</span>
+                </div>
+                <div class="exercise-cards-list">
+                    {% for item in meal_plan.exercise_plan.warm_up %}
+                    <div class="exercise-card">
+                        <div class="exercise-card-main">
+                            <h4>{{ item.name }}</h4>
+                            <p class="sets-reps-val">🔄 {{ item.sets_reps }}</p>
+                        </div>
+                        
+                        <div class="exercise-metrics">
+                            <div class="metric-item tooltip-trigger" onclick="toggleTooltip(this)">
+                                ⏱️ Tempo: <strong>{{ item.tempo }}</strong>
+                                <span class="tooltip-text">Tempo format: eccentric - isometric pause - concentric - pause. (e.g. 2-0-2-0 means 2s down, 0s pause, 2s up, 0s pause).</span>
+                            </div>
+                            <div class="metric-item">
+                                💤 Rest: <strong>{{ item.rest }}</strong>
+                            </div>
+                            <div class="metric-item tooltip-trigger" onclick="toggleTooltip(this)">
+                                🔥 Effort: <strong>{{ item.intensity }}</strong>
+                                <span class="tooltip-text">RPE (Rate of Perceived Exertion) on a scale of 1-10: 10 is max effort, 7 is moderate/hard (3 reps left in reserve).</span>
+                            </div>
+                        </div>
+
+                        {% if item.modification_reason %}
+                        <div class="clinical-modification-box">
+                            <strong>🩺 Medical Adaptation:</strong> {{ item.modification_reason }}
+                        </div>
+                        {% endif %}
+
+                        <a href="https://www.youtube.com/results?search_query={{ item.youtube_query | urlencode }}" target="_blank" class="video-btn">
+                            🎬 Watch Form Video
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- CORE WORKOUT PHASE -->
+            <div class="workout-phase-column">
+                <div class="phase-header core-header">
+                    <h3>🔥 Phase 2: Core Working Sets</h3>
+                    <span>Primary strength & conditioning blocks</span>
+                </div>
+                <div class="exercise-cards-list">
+                    {% for item in meal_plan.exercise_plan.core_workout %}
+                    <div class="exercise-card">
+                        <div class="exercise-card-main">
+                            <h4>{{ item.name }}</h4>
+                            <p class="sets-reps-val">🔄 {{ item.sets_reps }}</p>
+                        </div>
+                        
+                        <div class="exercise-metrics">
+                            <div class="metric-item tooltip-trigger" onclick="toggleTooltip(this)">
+                                ⏱️ Tempo: <strong>{{ item.tempo }}</strong>
+                                <span class="tooltip-text">Tempo format: eccentric - isometric pause - concentric - pause. (e.g. 3-1-1-0 means 3s down, 1s pause, 1s up, 0s pause).</span>
+                            </div>
+                            <div class="metric-item">
+                                💤 Rest: <strong>{{ item.rest }}</strong>
+                            </div>
+                            <div class="metric-item tooltip-trigger" onclick="toggleTooltip(this)">
+                                🔥 Effort: <strong>{{ item.intensity }}</strong>
+                                <span class="tooltip-text">RPE (Rate of Perceived Exertion) on a scale of 1-10: 10 is max effort, 8 is hard (2 reps left in reserve).</span>
+                            </div>
+                        </div>
+
+                        {% if item.modification_reason %}
+                        <div class="clinical-modification-box">
+                            <strong>🩺 Medical Adaptation:</strong> {{ item.modification_reason }}
+                        </div>
+                        {% endif %}
+
+                        <a href="https://www.youtube.com/results?search_query={{ item.youtube_query | urlencode }}" target="_blank" class="video-btn">
+                            🎬 Watch Form Video
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- COOL-DOWN PHASE -->
+            <div class="workout-phase-column">
+                <div class="phase-header cool-down-header">
+                    <h3>🧘 Phase 3: Cool-down</h3>
+                    <span>Regulate blood flow & stretch muscles</span>
+                </div>
+                <div class="exercise-cards-list">
+                    {% for item in meal_plan.exercise_plan.cool_down %}
+                    <div class="exercise-card">
+                        <div class="exercise-card-main">
+                            <h4>{{ item.name }}</h4>
+                            <p class="sets-reps-val">🔄 {{ item.sets_reps }}</p>
+                        </div>
+                        
+                        <div class="exercise-metrics">
+                            <div class="metric-item tooltip-trigger" onclick="toggleTooltip(this)">
+                                ⏱️ Tempo: <strong>{{ item.tempo }}</strong>
+                                <span class="tooltip-text">Tempo format: static stretches are held in place rather than rep tempos.</span>
+                            </div>
+                            <div class="metric-item">
+                                💤 Rest: <strong>{{ item.rest }}</strong>
+                            </div>
+                            <div class="metric-item tooltip-trigger" onclick="toggleTooltip(this)">
+                                🔥 Effort: <strong>{{ item.intensity }}</strong>
+                                <span class="tooltip-text">RPE (Rate of Perceived Exertion): low intensity recovery.</span>
+                            </div>
+                        </div>
+
+                        {% if item.modification_reason %}
+                        <div class="clinical-modification-box">
+                            <strong>🩺 Medical Adaptation:</strong> {{ item.modification_reason }}
+                        </div>
+                        {% endif %}
+
+                        <a href="https://www.youtube.com/results?search_query={{ item.youtube_query | urlencode }}" target="_blank" class="video-btn">
+                            🎬 Watch Form Video
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
 
     <div class="results-actions">
         <a href="/" class="back-dashboard-btn">← Back to Dashboard</a>
     </div>
 </div>
+
+<script>
+function switchTab(evt, tabName) {
+    const tabPanels = document.querySelectorAll(".tab-panel");
+    tabPanels.forEach(panel => {
+        panel.classList.remove("active");
+    });
+
+    const tabBtns = document.querySelectorAll(".tab-btn");
+    tabBtns.forEach(btn => {
+        btn.classList.remove("active");
+    });
+
+    document.getElementById(tabName).classList.add("active");
+    evt.currentTarget.classList.add("active");
+}
+
+function toggleTooltip(element) {
+    const tooltip = element.querySelector(".tooltip-text");
+    if (tooltip) {
+        tooltip.classList.toggle("show");
+    }
+}
+
+function copyWorkoutRoutine() {
+    let text = "🏋️ MY PERSONALIZED MEDICAL WORKOUT ROUTINE 🏋️\n\n";
+    
+    {% if engine == 'gemini' and meal_plan.exercise_plan %}
+        text += "🌅 PHASE 1: WARM-UP\n";
+        {% for item in meal_plan.exercise_plan.warm_up %}
+            text += `- ${ "{{ item.name }}" }: ${ "{{ item.sets_reps }}" } | Tempo: ${ "{{ item.tempo }}" } | Rest: ${ "{{ item.rest }}" } | Effort: ${ "{{ item.intensity }}" }\n`;
+            {% if item.modification_reason %}
+                text += `  *🩺 Adaptation: ${ "{{ item.modification_reason }}" }*\n`;
+            {% endif %}
+        {% endfor %}
+        text += "\n";
+
+        text += "🔥 PHASE 2: CORE WORKOUT\n";
+        {% for item in meal_plan.exercise_plan.core_workout %}
+            text += `- ${ "{{ item.name }}" }: ${ "{{ item.sets_reps }}" } | Tempo: ${ "{{ item.tempo }}" } | Rest: ${ "{{ item.rest }}" } | Effort: ${ "{{ item.intensity }}" }\n`;
+            {% if item.modification_reason %}
+                text += `  *🩺 Adaptation: ${ "{{ item.modification_reason }}" }*\n`;
+            {% endif %}
+        {% endfor %}
+        text += "\n";
+
+        text += "🧘 PHASE 3: COOL-DOWN\n";
+        {% for item in meal_plan.exercise_plan.cool_down %}
+            text += `- ${ "{{ item.name }}" }: ${ "{{ item.sets_reps }}" } | Tempo: ${ "{{ item.tempo }}" } | Rest: ${ "{{ item.rest }}" } | Effort: ${ "{{ item.intensity }}" }\n`;
+            {% if item.modification_reason %}
+                text += `  *🩺 Adaptation: ${ "{{ item.modification_reason }}" }*\n`;
+            {% endif %}
+        {% endfor %}
+    {% endif %}
+    
+    navigator.clipboard.writeText(text).then(() => {
+        alert("Workout routine copied to clipboard! 📋");
+    }).catch(err => {
+        console.error("Failed to copy text: ", err);
+    });
+}
+</script>
 {% endblock %}
