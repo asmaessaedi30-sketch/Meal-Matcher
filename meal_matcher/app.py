@@ -1,5 +1,5 @@
 import os
-import secrets
+import secrets # used to cryptograhically generate strong number 
 import smtplib
 import time
 import json
@@ -38,7 +38,7 @@ app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-secret-change-me")
 # Points directly to BASE_DIR so it links with the terminal database file
 db = SQL(f"sqlite:///{os.path.join(BASE_DIR, 'meal_matcher.db')}")
 
-# Create user_profiles table if it does not exist
+# Create user_profiles table 
 db.execute(
     """
     CREATE TABLE IF NOT EXISTS user_profiles (
@@ -60,7 +60,7 @@ db.execute(
     """
 )
 
-# Create cached_meal_plans table if it does not exist
+# Create cached_meal_plans table 
 db.execute(
     """
     CREATE TABLE IF NOT EXISTS cached_meal_plans (
@@ -85,7 +85,7 @@ try:
 except Exception:
     pass
 
-# Insert standard food items if they aren't already present
+# Insert standard food items 
 default_foods = [
     ("Chicken Breast", 165, 31.0, 0.0, 3.6, 100, 74, 0, 85),
     ("White Rice", 130, 2.7, 28.0, 0.3, 100, 1, 1, 0),
@@ -178,14 +178,20 @@ def send_password_reset_email(email, reset_code, reset_url):
         "This code expires in 15 minutes. If you did not request it, you can ignore this email."
     )
 
-    with smtplib.SMTP(mail_server, mail_port) as smtp:
-        if use_tls:
-            smtp.starttls()
-        if mail_username and mail_password:
-            smtp.login(mail_username, mail_password)
-        smtp.send_message(message)
-
-    return True
+    try:
+        with smtplib.SMTP(mail_server, mail_port) as smtp:
+            if use_tls:
+                smtp.starttls()
+            if mail_username and mail_password:
+                smtp.login(mail_username, mail_password)
+            smtp.send_message(message)
+        return True
+    except Exception as e:
+        app.logger.error(f"Failed to send email: {e}")
+        # Fallback logging to console/terminal
+        app.logger.warning("FALLBACK: Password reset code for %s: %s", email, reset_code)
+        app.logger.warning("FALLBACK: Password reset page: %s", reset_url)
+        return False
 
 def calculate_meal_risks(meal, conditions):
     totals = {
@@ -296,7 +302,7 @@ def get_or_create_profile(user_id):
             """
             INSERT INTO user_profiles 
             (user_id, age, gender, weight_kg, height_cm, activity_level, goal, conditions, preferences, target_calories, target_protein, target_carbs, target_fat) 
-            VALUES (?, 30, 'male', 70.0, 170.0, 'moderate', 'maintain', '', '', 2000, 130, 220, 65)
+            VALUES (?, 30, 'female', 70.0, 170.0, 'moderate', 'maintain', '', '', 2000, 130, 220, 65)
             """,
             user_id
         )
