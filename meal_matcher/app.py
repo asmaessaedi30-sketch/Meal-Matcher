@@ -85,6 +85,17 @@ try:
 except Exception:
     pass
 
+# Ensure users table has password reset columns (robust for database schema updates)
+try:
+    db.execute("ALTER TABLE users ADD COLUMN reset_code_hash TEXT")
+except Exception:
+    pass
+
+try:
+    db.execute("ALTER TABLE users ADD COLUMN reset_code_expires_at INTEGER")
+except Exception:
+    pass
+
 # Insert standard food items 
 default_foods = [
     ("Chicken Breast", 165, 31.0, 0.0, 3.6, 100, 74, 0, 85),
