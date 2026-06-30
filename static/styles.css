@@ -1327,3 +1327,65 @@ textarea:focus, input:focus, select:focus {
 .video-btn:hover {
     background-color: #cc0000;
 }
+
+/* --- Workout Guide Box --- */
+.workout-guide-box {
+    background: rgba(255, 255, 255, 0.7);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: var(--shadow-sm);
+}
+
+.workout-guide-box h4 {
+    margin: 0 0 1rem 0;
+    color: var(--text-main);
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.guide-items-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+    .guide-items-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+.guide-item-card {
+    background: var(--bg-white);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1rem;
+}
+
+.guide-item-card h5 {
+    margin: 0 0 0.5rem 0;
+    color: var(--primary);
+    font-size: 0.95rem;
+    font-weight: 700;
+}
+
+.guide-item-card p, .guide-item-card li {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    line-height: 1.4;
+    margin-bottom: 0.35rem;
+}
+
+.guide-item-card ul {
+    margin: 0.5rem 0;
+    padding-left: 1.1rem;
+}
+
+.guide-example {
+    margin-top: 0.5rem;
+    border-top: 1px solid var(--border);
+    padding-top: 0.5rem;
+    display: block;
+}
