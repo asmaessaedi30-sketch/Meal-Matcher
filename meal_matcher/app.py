@@ -1,5 +1,6 @@
 import os
 import secrets # used to cryptograhically generate strong number 
+import shutil
 import smtplib
 import time
 import json
@@ -31,12 +32,65 @@ app = Flask(
     static_folder=os.path.join(PROJECT_ROOT, "static"),
 )
 
-#  PASTE THIS CORRECTED BLOCKED CODE:
+# Keep runtime data in Azure App Service's persistent /home storage.
+DATA_DIR = os.environ.get("DATA_DIR", BASE_DIR)
+os.makedirs(DATA_DIR, exist_ok=True)
+DATABASE_PATH = os.environ.get("DATABASE_PATH", os.path.join(DATA_DIR, "meal_matcher.db"))
+SESSION_DIR = os.path.join(DATA_DIR, "flask_session")
+os.makedirs(SESSION_DIR, exist_ok=True)
+
+# Seed persistent storage with the bundled database on the first deployment.
+BUNDLED_DATABASE_PATH = os.path.join(BASE_DIR, "meal_matcher.db")
+if DATABASE_PATH != BUNDLED_DATABASE_PATH and not os.path.exists(DATABASE_PATH):
+    shutil.copy2(BUNDLED_DATABASE_PATH, DATABASE_PATH)
+
 app.config["SESSION_PERMANENT"] = False
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-secret-change-me")
+app.config["SESSION_TYPE"] = "filesystem"
+app.config["SESSION_FILE_DIR"] = SESSION_DIR
+app.config["SESSION_USE_SIGNER"] = True
+app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+app.config["SESSION_COOKIE_SECURE"] = bool(os.environ.get("WEBSITE_HOSTNAME"))
 
-# Points directly to BASE_DIR so it links with the terminal database file
-db = SQL(f"sqlite:///{os.path.join(BASE_DIR, 'meal_matcher.db')}")
+if os.environ.get("WEBSITE_HOSTNAME") and app.config["SECRET_KEY"] == "dev-secret-change-me":
+    raise RuntimeError("SECRET_KEY must be configured in Azure App Service settings.")
+
+Session(app)
+
+# Use one App Service instance and one Gunicorn worker while SQLite is in use.
+db = SQL(f"sqlite:///{DATABASE_PATH}")
+
+# Create the complete schema when persistent storage starts empty.
+db.execute(
+    """
+    CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT NOT NULL UNIQUE,
+        password_hash TEXT NOT NULL,
+        email TEXT,
+        reset_code_hash TEXT,
+        reset_code_expires_at INTEGER
+    )
+    """
+)
+db.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email) WHERE email IS NOT NULL")
+db.execute(
+    """
+    CREATE TABLE IF NOT EXISTS foods (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL UNIQUE,
+        calories INTEGER NOT NULL,
+        protein REAL NOT NULL,
+        carbs REAL NOT NULL,
+        fat REAL NOT NULL,
+        serving_size_g INTEGER NOT NULL,
+        sodium_mg INTEGER NOT NULL DEFAULT 0,
+        glycemic_index_high INTEGER NOT NULL DEFAULT 0 CHECK (glycemic_index_high IN (0, 1)),
+        cholesterol_mg INTEGER NOT NULL DEFAULT 0
+    )
+    """
+)
 
 # Create user_profiles table 
 db.execute(
@@ -327,6 +381,13 @@ def login_required(view):
             return redirect("/login")
         return view(*args, **kwargs)
     return wrapped_view
+
+
+@app.get("/health")
+def health():
+    """Lightweight endpoint for Azure health checks."""
+    db.execute("SELECT 1")
+    return {"status": "ok"}, 200
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
