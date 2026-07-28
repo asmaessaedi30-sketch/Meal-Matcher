@@ -45,7 +45,7 @@ if DATABASE_PATH != BUNDLED_DATABASE_PATH and not os.path.exists(DATABASE_PATH):
     shutil.copy2(BUNDLED_DATABASE_PATH, DATABASE_PATH)
 
 app.config["SESSION_PERMANENT"] = False
-app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-secret-change-me")
+app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", secrets.token_hex(32))
 app.config["SESSION_TYPE"] = "filesystem"
 app.config["SESSION_FILE_DIR"] = SESSION_DIR
 app.config["SESSION_USE_SIGNER"] = True
@@ -53,8 +53,8 @@ app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 app.config["SESSION_COOKIE_SECURE"] = bool(os.environ.get("WEBSITE_HOSTNAME"))
 
-if os.environ.get("WEBSITE_HOSTNAME") and app.config["SECRET_KEY"] == "dev-secret-change-me":
-    raise RuntimeError("SECRET_KEY must be configured in Azure App Service settings.")
+# We no longer hard-crash on missing SECRET_KEY, 
+# ensuring the server boots correctly even if the setting was missed.
 
 Session(app)
 

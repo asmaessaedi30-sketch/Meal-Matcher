@@ -67,6 +67,22 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_BE53865825814118BF3765393C1B1394 }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_9072D0D281284EB7800AFAC87118AF1F }}
 
+      - name: Configure Azure App Service
+        uses: azure/cli@v2
+        with:
+          azcliversion: latest
+          inlineScript: |
+            RG=$(az webapp list --query "[?name=='MealMatcher'].resourceGroup" -o tsv)
+            if [ -z "$RG" ]; then
+              RG=$(az webapp list --query "[?contains(name, 'mealmatcher')].resourceGroup" -o tsv | head -n 1)
+              APP_NAME=$(az webapp list --query "[?contains(name, 'mealmatcher')].name" -o tsv | head -n 1)
+            else
+              APP_NAME="MealMatcher"
+            fi
+            echo "Found App: $APP_NAME in Resource Group: $RG"
+            az webapp config appsettings set --name $APP_NAME --resource-group $RG --settings SCM_DO_BUILD_DURING_DEPLOYMENT=true DATA_DIR=/home/data
+            az webapp config set --name $APP_NAME --resource-group $RG --startup-file "bash startup.sh" --always-on true
+
       - name: 'Deploy to Azure Web App'
         uses: azure/webapps-deploy@v3
         id: deploy-to-webapp
