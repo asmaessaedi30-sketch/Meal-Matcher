@@ -633,6 +633,58 @@ def profile():
     prefs = [p for p in profile_data["preferences"].split(",") if p]
     return render_template("profile.html", profile=profile_data, conditions=conds, preferences=prefs)
 
+@app.route("/debug-smtp")
+def debug_smtp():
+    import traceback
+    
+    mail_server = os.environ.get("MAIL_SERVER", "NOT SET")
+    mail_port = os.environ.get("MAIL_PORT", "NOT SET")
+    mail_username = os.environ.get("MAIL_USERNAME", "NOT SET")
+    mail_password = os.environ.get("MAIL_PASSWORD", "NOT SET")
+    use_tls = os.environ.get("MAIL_USE_TLS", "NOT SET")
+
+    output = []
+    output.append("--- SMTP Debugger ---")
+    output.append(f"MAIL_SERVER: '{mail_server}'")
+    output.append(f"MAIL_PORT: '{mail_port}'")
+    output.append(f"MAIL_USERNAME: '{mail_username}'")
+    output.append(f"MAIL_PASSWORD length: {len(mail_password) if mail_password != 'NOT SET' else 'NOT SET'}")
+    output.append(f"MAIL_USE_TLS: '{use_tls}'")
+    
+    if mail_server == "NOT SET":
+        output.append("\nERROR: MAIL_SERVER is missing.")
+        return "<pre>" + "\n".join(output) + "</pre>"
+
+    output.append("\nAttempting connection...")
+    try:
+        import smtplib
+        port = int(mail_port) if mail_port != "NOT SET" else 587
+        tls_flag = str(use_tls).lower() in {"1", "true", "yes"}
+        
+        output.append(f"Connecting to {mail_server}:{port}...")
+        
+        with smtplib.SMTP(mail_server, port, timeout=10) as smtp:
+            output.append("Connection successful. Attempting EHLO...")
+            smtp.ehlo()
+            
+            if tls_flag:
+                output.append("Attempting STARTTLS...")
+                smtp.starttls()
+                smtp.ehlo()
+            
+            if mail_username != "NOT SET" and mail_password != "NOT SET":
+                output.append(f"Attempting login as {mail_username}...")
+                smtp.login(mail_username, mail_password)
+                output.append("LOGIN SUCCESSFUL! SMTP is perfectly configured.")
+            else:
+                output.append("Skipping login (no credentials).")
+                
+    except Exception as e:
+        output.append("\nEXCEPTION THROWN:")
+        output.append(traceback.format_exc())
+        
+    return "<pre>" + "\n".join(output) + "</pre>"
+
 @app.route("/", methods=["GET", "POST"])
 @login_required
 def index():
